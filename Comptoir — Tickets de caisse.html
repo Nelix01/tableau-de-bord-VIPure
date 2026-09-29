@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Comptoir — Tickets de caisse</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --bg:#EDF1F7; --panel:#FFFFFF; --ink:#1C2531; --ink-soft:#69748A; --line:#DCE3EE;
+  --blue:#3457D5; --blue-dk:#28409E; --green:#12A150; --green-dk:#0D7C3E;
+  --red:#D6483F; --navy:#161C29; --navy2:#0B0E15;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F131B; --panel:#171C27; --ink:#E7EBF3; --ink-soft:#8D97AA; --line:#28303F; --navy:#0B0E15;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F131B; --panel:#171C27; --ink:#E7EBF3; --ink-soft:#8D97AA; --line:#28303F; --navy:#0B0E15;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; min-height:100%;}
+.wrap{max-width:1180px; margin:0 auto; padding:36px 24px 80px;}
+header.top{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:22px; flex-wrap:wrap;}
+header.top h1{font-size:22px; margin:0; letter-spacing:.2px; font-weight:700;}
+header.top p{margin:4px 0 0; color:var(--ink-soft); font-size:13.5px;}
+.top-controls{display:flex; gap:8px;}
+.icon-btn{background:var(--panel); border:1px solid var(--line); color:var(--ink-soft); border-radius:8px; padding:9px 13px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;}
+.icon-btn:hover{border-color:var(--blue); color:var(--blue);}
+.icon-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px;}
+@media (max-width:700px){.stats{grid-template-columns:repeat(2,1fr);}}
+.stat{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
+.stat .sv{font-size:19px; font-weight:700;}
+.stat .sl{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+
+.grid{display:grid; grid-template-columns:1.05fr 0.95fr; gap:28px; align-items:start;}
+@media (max-width:860px){.grid{grid-template-columns:1fr;}}
+
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:22px;}
+.panel + .panel{margin-top:22px;}
+.panel h2{font-size:13px; letter-spacing:.3px; margin:0 0 16px; color:var(--ink-soft); font-weight:600; text-transform:uppercase;}
+.panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
+.panel-head h2{margin:0;}
+
+label{display:block; font-size:12.5px; color:var(--ink-soft); margin:14px 0 5px;}
+label:first-child{margin-top:0}
+input,select,textarea{width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:7px; background:var(--bg); color:var(--ink); font-size:14.5px; font-family:inherit;}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--blue); outline-offset:1px;}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+
+.pack-form-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:6px;}
+.pack-save{margin-top:10px; width:100%; background:var(--green); color:#fff; border:none; border-radius:7px; padding:11px; font-size:14px; font-weight:600; cursor:pointer;}
+.pack-save:hover{background:var(--green-dk);}
+.pack-cancel{margin-top:8px; width:100%; background:none; border:1px solid var(--line); color:var(--ink-soft); border-radius:7px; padding:9px; font-size:13px; cursor:pointer;}
+.pack-list{margin-top:14px; display:flex; flex-direction:column; gap:1px; background:var(--line); border-radius:8px; overflow:hidden; border:1px solid var(--line);}
+.pack-row{background:var(--panel); padding:10px 13px; display:flex; align-items:center; gap:10px; font-size:13.5px; cursor:pointer;}
+.pack-row:hover{background:var(--bg);}
+.pack-row .pn{flex:1;}
+.pack-row .pv{color:var(--ink-soft); font-size:12px;}
+.pack-row .pdel{background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:15px; padding:2px 4px;}
+.pack-row .pdel:hover{color:var(--red);}
+.pack-empty{color:var(--ink-soft); font-size:13px; padding:10px 2px;}
+
+.actions{display:flex; gap:10px; margin-top:20px;}
+button.primary{flex:1; background:var(--blue); color:#fff; border:none; border-radius:7px; padding:12px; font-size:14.5px; font-weight:600; cursor:pointer;}
+button.primary:hover{background:var(--blue-dk);}
+button.ghost{background:none; border:1px solid var(--line); color:var(--ink-soft); border-radius:7px; padding:12px 16px; font-size:13.5px; cursor:pointer;}
+button.ghost:hover{border-color:var(--ink-soft); color:var(--ink);}
+button.danger-ghost{background:none; border:1px solid var(--line); color:var(--red); border-radius:7px; padding:8px 12px; font-size:12.5px; cursor:pointer;}
+button.danger-ghost:hover{border-color:var(--red); background:var(--bg);}
+
+.margin-box{margin-top:18px; background:var(--navy); color:#fff; border-radius:8px; padding:16px 18px;}
+.margin-box .mv{font-size:19px; font-weight:700;}
+.margin-box .badge{display:inline-block; margin-top:7px; font-size:11px; font-weight:700; letter-spacing:.3px; padding:3px 10px; border-radius:20px;}
+.badge.ok{background:var(--green); color:#fff;}
+.badge.bad{background:var(--red); color:#fff;}
+
+.sensitive{transition:filter .15s ease;}
+body.is-discreet .sensitive{filter:blur(7px); user-select:none;}
+
+.receipt-holder{display:flex; justify-content:center;}
+.receipt{width:320px; background:#FBFAF6; color:#20211D; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px; line-height:1.55; padding:26px 22px 20px; position:relative; box-shadow:0 18px 40px -20px rgba(0,0,0,.35);}
+.receipt::before,.receipt::after{content:""; position:absolute; left:0; right:0; height:10px; background:radial-gradient(circle at 8px 0, transparent 6px, var(--bg) 6.5px) repeat-x; background-size:16px 10px;}
+.receipt::before{top:-9px;}
+.receipt::after{bottom:-9px; transform:rotate(180deg);}
+.rc-title{font-family:-apple-system,sans-serif; font-weight:700; font-size:15.5px; letter-spacing:.4px; text-align:center;}
+.rc-sub{text-align:center; color:#6b6a63; font-size:11px; margin-top:3px;}
+.rc-num{text-align:center; color:var(--red); font-size:11px; margin-top:2px; letter-spacing:.5px;}
+.rc-div{border-top:1px dashed #D8D4C4; margin:14px 0;}
+.rc-kv{display:flex; justify-content:space-between; gap:10px;}
+.rc-kv b{font-weight:600;}
+.rc-label{color:#6b6a63; font-size:10.5px; letter-spacing:.4px; margin-bottom:6px;}
+.rc-item{display:flex; justify-content:space-between; gap:10px; margin-bottom:3px;}
+.rc-item span:first-child{max-width:190px;}
+.rc-note{margin-top:8px; color:#6b6a63; font-size:11px; font-style:italic;}
+.rc-total{display:flex; justify-content:space-between; border-top:2px solid #20211D; padding-top:8px; margin-top:10px; font-weight:700; font-size:15px;}
+.rc-qr{display:flex; justify-content:center; margin:18px 0 6px;}
+.rc-qr .qr-frame{background:#ffffff; padding:10px; border-radius:6px; line-height:0;}
+.rc-foot{color:#6b6a63; font-size:10.5px; text-align:center; margin-top:6px;}
+.rc-hint{text-align:center; color:#6b6a63; font-size:9.5px; margin-top:2px;}
+.receipt-actions{display:flex; gap:8px; margin-top:16px; width:320px;}
+.receipt-actions button{flex:1;}
+
+.empty-note{color:var(--ink-soft); font-size:13px; text-align:center; padding:20px 6px;}
+
+/* Calendar */
+.cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.cal-nav{display:flex; align-items:center; gap:10px;}
+.cal-nav button{background:none; border:1px solid var(--line); color:var(--ink-soft); border-radius:7px; width:32px; height:32px; font-size:15px; cursor:pointer;}
+.cal-nav button:hover{border-color:var(--blue); color:var(--blue);}
+.cal-month{font-weight:700; font-size:14.5px; min-width:150px; text-align:center; text-transform:capitalize;}
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+.cal-dow{font-size:10.5px; color:var(--ink-soft); text-align:center; padding-bottom:4px; text-transform:uppercase;}
+.cal-cell{aspect-ratio:1; border-radius:8px; border:1px solid var(--line); padding:6px; display:flex; flex-direction:column; gap:3px; cursor:default; background:var(--bg);}
+.cal-cell.empty{border:none; background:none;}
+.cal-cell.has-sales{cursor:pointer; background:var(--panel); border-color:var(--blue);}
+.cal-cell.has-sales:hover{background:#E7EDFC;}
+.cal-cell.is-today{border-width:2px; border-color:var(--ink);}
+.cal-cell.is-selected{background:var(--navy); border-color:var(--navy);}
+.cal-cell.is-selected .cal-daynum, .cal-cell.is-selected .cal-count{color:#fff;}
+.cal-daynum{font-size:12px; font-weight:600;}
+.cal-count{font-size:10px; color:var(--blue); font-weight:600;}
+.cal-filter-bar{display:flex; align-items:center; gap:10px; margin-top:14px; font-size:12.5px; color:var(--ink-soft);}
+.cal-filter-bar button{background:none; border:1px solid var(--line); color:var(--blue); border-radius:20px; padding:5px 12px; cursor:pointer; font-size:12px;}
+
+.hist{margin-top:28px;}
+.hist h2{font-size:13px; color:var(--ink-soft); margin:0; font-weight:600; text-transform:uppercase;}
+.hist-tools{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.hist-tools input{width:200px;}
+.hist-tools button{background:none; border:1px solid var(--line); color:var(--ink-soft); border-radius:7px; padding:8px 12px; font-size:12.5px; cursor:pointer;}
+.hist-tools button:hover{border-color:var(--blue); color:var(--blue);}
+.hist-list{display:flex; flex-direction:column; gap:1px; background:var(--line); border-radius:8px; overflow:hidden; border:1px solid var(--line);}
+.hist-row{background:var(--panel); padding:13px 16px; display:flex; align-items:center; gap:14px; cursor:pointer;}
+.hist-row:hover{background:var(--bg);}
+.hist-row .hn{font-family:ui-monospace,monospace; color:var(--blue); font-size:12px; width:52px; flex-shrink:0;}
+.hist-row .hc{flex:1; min-width:0;}
+.hist-row .hc b{font-size:14px;}
+.hist-row .hc small{display:block; color:var(--ink-soft); font-size:11.5px; margin-top:1px;}
+.hist-row .hm{font-size:11px; flex-shrink:0; padding:3px 9px; border-radius:20px; font-weight:600;}
+.hist-row .ht{font-weight:700; font-size:14px; flex-shrink:0; width:76px; text-align:right;}
+.hist-row .hdel{background:none; border:none; color:var(--ink-soft); font-size:16px; cursor:pointer; flex-shrink:0; padding:4px;}
+.hist-row .hdel:hover{color:var(--red);}
+
+.view-wrap{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg); padding:40px 16px; gap:16px;}
+.view-back{position:fixed; top:calc(18px + env(safe-area-inset-top,0px)); left:18px; font-size:13px; color:var(--ink-soft); text-decoration:none; border:1px solid var(--line); padding:7px 13px; border-radius:20px; background:var(--panel);}
+
+.home-wrap{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--navy2); color:#EDEFF4; gap:22px; text-align:center; padding:24px;}
+.home-square{width:180px; height:180px; border-radius:28px; background:linear-gradient(155deg, var(--blue) 0%, var(--blue-dk) 100%); display:flex; align-items:center; justify-content:center; font-size:64px; cursor:pointer; box-shadow:0 24px 60px -18px rgba(52,87,213,.55); border:none; transition:transform .12s ease, box-shadow .12s ease;}
+.home-square:hover{transform:translateY(-3px); box-shadow:0 28px 70px -16px rgba(52,87,213,.65);}
+.home-square:active{transform:translateY(0) scale(.97);}
+.home-grid{display:flex;gap:34px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.home-tile{display:flex;flex-direction:column;align-items:center;gap:12px;text-decoration:none;color:#EDEFF4;background:none;border:none;cursor:pointer;font-family:inherit}
+.home-tile .lbl{font-size:14px;font-weight:600}
+.home-square.alt{background:linear-gradient(155deg,#12A150 0%,#0D7C3E 100%);box-shadow:0 24px 60px -18px rgba(18,161,80,.5)}
+.home-square.alt2{background:linear-gradient(155deg,#B3402A 0%,#8A3220 100%);box-shadow:0 24px 60px -18px rgba(179,64,42,.5)}
+.pin-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--navy2);color:#EDEFF4;gap:26px;padding:24px}
+.pin-title{font-size:17px;font-weight:600}
+.pin-dots{display:flex;gap:16px}
+.pin-dots span{width:14px;height:14px;border-radius:50%;border:2px solid #8D97AA}
+.pin-dots span.on{background:#fff;border-color:#fff}
+.pin-dots.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+.pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:14px}
+.pin-pad button{width:72px;height:72px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:#fff;font-size:26px;cursor:pointer}
+.pin-pad button:active{background:rgba(255,255,255,.25)}
+.home-title{font-size:20px; font-weight:700; letter-spacing:.3px;}
+.home-sub{font-size:13px; color:#8D97AA;}
+
+/* Custom confirm modal (replaces window.confirm, unreliable in sandboxed views) */
+.modal-overlay{position:fixed; inset:0; background:rgba(11,14,21,.55); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px;}
+.modal-card{background:var(--panel); border-radius:12px; padding:22px; max-width:340px; width:100%; box-shadow:0 30px 70px -20px rgba(0,0,0,.4);}
+.modal-card p{margin:0 0 18px; font-size:14px; color:var(--ink); line-height:1.5;}
+.modal-actions{display:flex; gap:10px;}
+.modal-actions button{flex:1;}
+
+/* Toast (replaces window.alert) */
+.toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%) translateY(20px); background:var(--navy); color:#fff; padding:12px 18px; border-radius:8px; font-size:13.5px; opacity:0; transition:opacity .2s ease, transform .2s ease; z-index:1100; max-width:90vw; text-align:center; pointer-events:none;}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+@media print{
+  body *{visibility:hidden;}
+  #print-target, #print-target *{visibility:visible;}
+  #print-target{position:absolute; top:0; left:50%; transform:translateX(-50%);}
+  .receipt-actions{display:none !important;}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+var LS_KEY = "comptoir_tickets_v1";
+var LS_SEQ = "comptoir_seq_v1";
+var LS_PACKS = "comptoir_packs_v1";
+var LS_DISCREET = "comptoir_discreet_v1";
+
+function loadHistory(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"[]"); }catch(e){ return []; } }
+function saveHistory(list){ try{ localStorage.setItem(LS_KEY, JSON.stringify(list)); }catch(e){} }
+function loadPacks(){ try{ return JSON.parse(localStorage.getItem(LS_PACKS)||"[]"); }catch(e){ return []; } }
+function savePacks(list){ try{ localStorage.setItem(LS_PACKS, JSON.stringify(list)); }catch(e){} }
+function nextSeq(){
+  var n = 1;
+  try{ n = parseInt(localStorage.getItem(LS_SEQ)||"0",10) + 1; localStorage.setItem(LS_SEQ, String(n)); }catch(e){}
+  return n;
+}
+function isDiscreet(){ try{ return localStorage.getItem(LS_DISCREET) === "1"; }catch(e){ return false; } }
+function setDiscreet(v){ try{ localStorage.setItem(LS_DISCREET, v?"1":"0"); }catch(e){} }
+
+function fmt(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",") + " €"; }
+function pad(n){ return String(n).padStart(2,"0"); }
+function dateStr(d){ d=d||new Date(); return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear()+" "+pad(d.getHours())+":"+pad(d.getMinutes()); }
+function dayKey(fullDateStr){ return (fullDateStr||"").split(" ")[0]; } // "DD/MM/YYYY"
+function b64encode(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64decode(str){ return decodeURIComponent(escape(atob(str))); }
+function computeTotals(v, r, tvaRate){
+  var totalHT = Math.max(0, (v||0) - (r||0));
+  var tva = totalHT * (tvaRate||0)/100;
+  return {totalHT: totalHT, tva: tva, totalTTC: totalHT + tva};
+}
+function slimForQr(data){
+  return {n:data.numStr, d:data.date, c:data.client, i:data.clientId, p:data.produit, v:data.venteHT, r:data.remise, t:data.tvaRate, o:data.note, x:data.vendeur};
+}
+function expandFromQr(o){
+  var tot = computeTotals(o.v, o.r, o.t);
+  return {numStr:o.n, date:o.d, client:o.c, clientId:o.i, produit:o.p, venteHT:o.v, remise:o.r, tvaRate:o.t, note:o.o, vendeur:o.x, totalHT:tot.totalHT, tva:tot.tva, totalTTC:tot.totalTTC};
+}
+function escapeHtml(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function csvEscape(s){
+  s = String(s==null?"":s);
+  if(/[",\n;]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+
+// ----- Toast (replaces window.alert, which sandboxed views can block) -----
+var toastTimer = null;
+function showToast(msg){
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 3200);
+}
+
+// ----- Custom confirm modal (replaces window.confirm) -----
+function showConfirm(message, onConfirm){
+  var overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.innerHTML =
+    '<div class="modal-card"><p>'+escapeHtml(message)+'</p><div class="modal-actions">'+
+    '<button type="button" class="ghost" id="mc-cancel">Annuler</button>'+
+    '<button type="button" class="primary" id="mc-ok" style="background:var(--red)">Confirmer</button>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+  function close(){ overlay.remove(); }
+  overlay.addEventListener("click", function(e){ if(e.target === overlay) close(); });
+  overlay.querySelector("#mc-cancel").addEventListener("click", close);
+  overlay.querySelector("#mc-ok").addEventListener("click", function(){ close(); onConfirm(); });
+}
+
+var downloadsCap = null;
+if(window.claude && typeof window.claude.use === "function"){
+  window.claude.use("downloads").then(function(d){ downloadsCap = d; }).catch(function(){});
+}
+function offerDownload(filename, data){
+  if(downloadsCap && typeof downloadsCap.save === "function"){
+    downloadsCap.save({filename: filename, data: data}).catch(function(err){
+      if(err && err.code !== "declined") showToast("Téléchargement impossible : " + (err && err.message ? err.message : "erreur inconnue"));
+    });
+  } else {
+    showToast("Le téléchargement n'est pas disponible dans cette vue.");
+  }
+}
+
+// ---------- PIN + main menu ----------
+var PIN = "0703";
+var AGENDA_URL = "https://claude.ai/artifact/SrWhDZJ9VTqx1tssFKDD2j";
+var unlocked = false;
+
+function askPin(){
+  var app = document.getElementById("app"), buf = "";
+  app.innerHTML = '<div class="pin-wrap"><div class="pin-title">Entrez le code</div><div class="pin-dots" id="pd"></div><div class="pin-pad" id="pp"></div></div>';
+  var pp = document.getElementById("pp");
+  ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(function(k){
+    var b = document.createElement("button"); b.type = "button"; b.textContent = k;
+    if(!k) b.style.visibility = "hidden";
+    b.onclick = function(){ press(k); }; pp.appendChild(b);
+  });
+  function draw(){ document.getElementById("pd").innerHTML = [0,1,2,3].map(function(i){ return '<span class="'+(i<buf.length?"on":"")+'"></span>'; }).join(""); }
+  function press(k){
+    if(k === "⌫") buf = buf.slice(0,-1); else if(k && buf.length < 4) buf += k;
+    draw();
+    if(buf.length === 4){
+      if(buf === PIN){ document.onkeydown = null; unlocked = true; renderHome(); }
+      else { var d = document.getElementById("pd"); d.classList.add("shake"); setTimeout(function(){ buf = ""; draw(); d.classList.remove("shake"); }, 450); }
+    }
+  }
+  document.onkeydown = function(e){ if(/^[0-9]$/.test(e.key)) press(e.key); else if(e.key === "Backspace") press("⌫"); };
+  draw();
+}
+
+function renderHome(){
+  document.body.classList.remove("is-discreet");
+  if(!unlocked){ askPin(); return; }
+  var app = document.getElementById("app");
+  app.innerHTML =
+    '<div class="home-wrap">'+
+      '<div class="home-grid">'+
+        '<button type="button" class="home-tile" id="home-caisse"><span class="home-square">🧾</span><span class="lbl">Caisse</span></button>'+
+        '<a class="home-tile" href="'+AGENDA_URL+'#cal" target="_blank" rel="noopener"><span class="home-square alt">📅</span><span class="lbl">Calendrier</span></a>'+
+        '<a class="home-tile" href="'+AGENDA_URL+'#notes" target="_blank" rel="noopener"><span class="home-square alt2">🗒️</span><span class="lbl">Notes</span></a>'+
+      '</div>'+
+      '<div><div class="home-title">Comptoir</div><div class="home-sub">Choisissez une application</div></div>'+
+      '<button type="button" class="icon-btn" id="home-lock" style="background:transparent;color:#8D97AA;border-color:#28303F">🔒 Verrouiller</button>'+
+    '</div>';
+  document.getElementById("home-caisse").addEventListener("click", renderApp);
+  document.getElementById("home-lock").addEventListener("click", function(){ unlocked = false; renderHome(); });
+}
+
+// ---------- Standalone receipt view (from QR link) ----------
+function renderTicketView(data){
+  document.body.innerHTML =
+    '<div class="view-wrap"><a class="view-back" href="'+location.pathname+'">← Nouveau comptoir</a>'+
+    '<div id="print-target"></div></div>'+
+    '<div id="toast" class="toast"></div>';
+  var holder = document.getElementById("print-target");
+  holder.appendChild(buildReceiptEl(data, true));
+}
+
+// ---------- Receipt element builder ----------
+function buildReceiptEl(data, forQr){
+  var el = document.createElement("div");
+  el.className = "receipt";
+
+  el.innerHTML =
+    '<div class="rc-title">REÇU DE PAIEMENT</div>'+
+    '<div class="rc-sub">'+escapeHtml(data.date)+'</div>'+
+    '<div class="rc-num">TICKET N° '+escapeHtml(data.numStr)+'</div>'+
+    '<div class="rc-div"></div>'+
+    '<div class="rc-kv"><span>CLIENT :</span><b>'+escapeHtml(data.client||"—")+'</b></div>'+
+    '<div class="rc-kv"><span>ID :</span><b>'+escapeHtml(data.clientId||"—")+'</b></div>'+
+    '<div class="rc-div"></div>'+
+    '<div class="rc-label">PRODUIT</div>'+
+    '<div class="rc-item"><span>'+escapeHtml(data.produit||"—")+'</span><span>'+fmt(data.totalHT||0)+'</span></div>'+
+    (data.remise ? '<div class="rc-item"><span>Remise</span><span>-'+fmt(data.remise)+'</span></div>' : '')+
+    (data.note ? '<div class="rc-note">'+escapeHtml(data.note)+'</div>' : '')+
+    '<div class="rc-div"></div>'+
+    '<div class="rc-kv"><span>TOTAL HT :</span><span>'+fmt(data.totalHT)+'</span></div>'+
+    '<div class="rc-kv"><span>TVA ('+data.tvaRate+'%) :</span><span>'+fmt(data.tva)+'</span></div>'+
+    '<div class="rc-total"><span>TOTAL TTC</span><span>'+fmt(data.totalTTC)+'</span></div>'+
+    '<div class="rc-qr" id="qr-slot"></div>'+
+    '<div class="rc-hint">Scanner pour retrouver ce reçu en ligne</div>'+
+    '<div class="rc-div"></div>'+
+    '<div class="rc-kv"><span>VENDEUR :</span><span>'+escapeHtml(data.vendeur||"—")+'</span></div>';
+
+  var qrSlot = el.querySelector("#qr-slot");
+  if(!forQr){
+    try{
+      var frame = document.createElement("div");
+      frame.className = "qr-frame";
+      qrSlot.appendChild(frame);
+      var payload = b64encode(JSON.stringify(slimForQr(data)));
+      var url = location.origin + location.pathname + "#r=" + payload;
+      new QRCode(frame, {text:url, width:150, height:150, colorDark:"#20211D", colorLight:"#ffffff", correctLevel: QRCode.CorrectLevel.L});
+    }catch(e){
+      qrSlot.innerHTML = '<div style="font-size:10.5px;color:#6b6a63">QR indisponible pour ce ticket</div>';
+    }
+  } else {
+    qrSlot.innerHTML = '<div style="font-size:10.5px;color:#6b6a63">Reçu consulté en ligne</div>';
+  }
+  return el;
+}
+
+function downloadReceiptImage(receiptEl, filenameBase){
+  if(typeof html2canvas !== "function"){
+    showToast("Le rendu de l'image n'a pas pu se charger. Réessayez dans un instant.");
+    return;
+  }
+  html2canvas(receiptEl, {backgroundColor:null, scale:2}).then(function(canvas){
+    canvas.toBlob(function(blob){
+      if(!blob){ showToast("Impossible de générer l'image du ticket."); return; }
+      offerDownload(filenameBase+".png", blob);
+    }, "image/png");
+  }).catch(function(){
+    showToast("Impossible de générer l'image du ticket.");
+  });
+}
+
+// ---------- Main app ----------
+function renderApp(){
+  var app = document.getElementById("app");
+  document.body.classList.toggle("is-discreet", isDiscreet());
+  app.innerHTML =
+    '<div class="wrap">'+
+      '<header class="top"><div><h1>Comptoir</h1><p>Gérez vos packs, enregistrez une vente, partagez le ticket.</p></div>'+
+      '<div class="top-controls">'+
+        '<button type="button" class="icon-btn" id="btn-menu">☰ Menu</button>'+
+        '<button type="button" class="icon-btn" id="btn-lock" title="Verrouiller">🔒 Verrouiller</button>'+
+        '<button type="button" class="icon-btn" id="btn-discreet">👁 Mode discret</button>'+
+      '</div></header>'+
+      '<div class="stats" id="stats-row"></div>'+
+      '<div class="grid">'+
+        '<div>'+
+          '<div class="panel">'+
+            '<h2>Gestion des packs</h2>'+
+            '<label for="f-catalogue">Catalogue</label>'+
+            '<select id="f-catalogue"><option value="">-- Choisir --</option></select>'+
+            '<label style="margin-top:18px" for="np-nom">Nouveau pack</label>'+
+            '<input id="np-nom" placeholder="Nom">'+
+            '<div class="pack-form-row">'+
+              '<input id="np-vente" type="number" step="0.01" placeholder="Vente HT">'+
+              '<input id="np-cout" type="number" step="0.01" placeholder="Coût HT">'+
+              '<div></div>'+
+            '</div>'+
+            '<button type="button" class="pack-save" id="btn-save-pack">Enregistrer le pack</button>'+
+            '<button type="button" class="pack-cancel" id="btn-cancel-pack" style="display:none">Annuler la modification</button>'+
+            '<div id="pack-list"></div>'+
+          '</div>'+
+          '<div class="panel">'+
+            '<h2>Transaction</h2>'+
+            '<div class="row2">'+
+              '<div><label for="f-client">Nom RP</label><input id="f-client" placeholder="Pseudo / nom"></div>'+
+              '<div><label for="f-id">ID Client</label><input id="f-id" placeholder="Facultatif"></div>'+
+            '</div>'+
+            '<div class="row2">'+
+              '<div><label for="f-vendeur">Vendeur</label><input id="f-vendeur" placeholder="Votre nom"></div>'+
+              '<div><label for="f-tva">TVA (%)</label><input id="f-tva" type="number" value="20" min="0" step="0.5"></div>'+
+            '</div>'+
+            '<label for="f-produit">Produit (libellé final)</label>'+
+            '<input id="f-produit" placeholder="Nom affiché sur le ticket">'+
+            '<div class="row2">'+
+              '<div><label for="f-vente">Vente HT (€)</label><input id="f-vente" type="number" step="0.01" value="0"></div>'+
+              '<div><label for="f-cout">Coût (€)</label><input id="f-cout" type="number" step="0.01" value="0"></div>'+
+            '</div>'+
+            '<div class="row2">'+
+              '<div><label for="f-remise">Remise (€)</label><input id="f-remise" type="number" step="0.01" value="0"></div>'+
+              '<div><label for="f-note">Note</label><input id="f-note" placeholder="Facultatif"></div>'+
+            '</div>'+
+            '<div class="margin-box sensitive"><div class="mv" id="margin-val">0.00 € de marge</div><span class="badge ok" id="margin-badge">RENTABLE</span></div>'+
+            '<div class="actions">'+
+              '<button type="button" class="primary" id="btn-generate">Valider la vente</button>'+
+              '<button type="button" class="ghost" id="btn-reset">Effacer</button>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="panel"><h2>Aperçu du ticket</h2><div class="receipt-holder" id="receipt-holder"></div><div class="receipt-actions" id="receipt-actions" style="display:none">'+
+          '<button type="button" class="ghost" id="btn-print">Imprimer</button>'+
+          '<button type="button" class="primary" id="btn-download">Télécharger</button>'+
+        '</div></div>'+
+      '</div>'+
+      '<div class="panel" style="margin-top:22px"><div class="panel-head"><h2>Calendrier des ventes</h2><div class="cal-nav"><button type="button" id="cal-prev">‹</button><div class="cal-month" id="cal-month-label"></div><button type="button" id="cal-next">›</button></div></div><div class="cal-grid" id="cal-grid"></div><div class="cal-filter-bar" id="cal-filter-bar" style="display:none"></div></div>'+
+      '<div class="hist"><div class="panel-head"><h2>Historique des ventes</h2><div class="hist-tools"><input id="hist-search" placeholder="Filtrer par client / produit"><button type="button" id="btn-export">Exporter CSV</button><button type="button" class="danger-ghost" id="btn-reset-stats">Réinitialiser les statistiques</button></div></div><div id="hist-list"></div></div>'+
+    '</div>';
+
+  document.getElementById("btn-menu").addEventListener("click", renderHome);
+  document.getElementById("btn-lock").addEventListener("click", function(){ unlocked = false; renderHome(); });
+
+  var discreetBtn = document.getElementById("btn-discreet");
+  function syncDiscreetBtn(){
+    var on = isDiscreet();
+    discreetBtn.classList.toggle("active", on);
+    discreetBtn.textContent = on ? "👁 Mode discret actif" : "👁 Mode discret";
+  }
+  discreetBtn.addEventListener("click", function(){
+    setDiscreet(!isDiscreet());
+    document.body.classList.toggle("is-discreet", isDiscreet());
+    syncDiscreetBtn();
+  });
+  syncDiscreetBtn();
+
+  // ----- Stats -----
+  function refreshStats(){
+    var hist = loadHistory();
+    var ca = hist.reduce(function(s,r){ return s+(r.totalTTC||0); }, 0);
+    var marge = hist.reduce(function(s,r){ return s+(r.marge||0); }, 0);
+    var packs = loadPacks();
+    document.getElementById("stats-row").innerHTML =
+      '<div class="stat"><div class="sv">'+hist.length+'</div><div class="sl">Ventes enregistrées</div></div>'+
+      '<div class="stat"><div class="sv sensitive">'+fmt(ca)+'</div><div class="sl">Chiffre d\u2019affaires TTC</div></div>'+
+      '<div class="stat"><div class="sv sensitive">'+fmt(marge)+'</div><div class="sl">Marge cumulée</div></div>'+
+      '<div class="stat"><div class="sv">'+packs.length+'</div><div class="sl">Packs au catalogue</div></div>';
+  }
+
+  // ----- Packs -----
+  var editingPackIdx = null;
+  function refreshPackUI(){
+    var packs = loadPacks();
+    var sel = document.getElementById("f-catalogue");
+    sel.innerHTML = '<option value="">-- Choisir --</option>' + packs.map(function(p,i){
+      return '<option value="'+i+'">'+escapeHtml(p.name)+'</option>';
+    }).join("");
+    var list = document.getElementById("pack-list");
+    if(!packs.length){
+      list.innerHTML = '<div class="pack-empty">Aucun pack enregistré pour le moment.</div>';
+    } else {
+      list.innerHTML = '<div class="pack-list">' + packs.map(function(p,i){
+        return '<div class="pack-row" data-idx="'+i+'"><span class="pn">'+escapeHtml(p.name)+'</span><span class="pv sensitive">'+fmt(p.venteHT)+' / coût '+fmt(p.coutHT)+'</span><button class="pdel" data-idx="'+i+'" title="Supprimer">🗑</button></div>';
+      }).join("") + '</div>';
+      list.querySelectorAll(".pdel").forEach(function(btn){
+        btn.addEventListener("click", function(e){
+          e.stopPropagation();
+          var idx = parseInt(btn.dataset.idx,10);
+          showConfirm("Supprimer ce pack ?", function(){
+            var cur = loadPacks();
+            cur.splice(idx,1);
+            savePacks(cur);
+            refreshPackUI();
+            refreshStats();
+            showToast("Pack supprimé.");
+          });
+        });
+      });
+      list.querySelectorAll(".pack-row").forEach(function(row){
+        row.addEventListener("click", function(){
+          var idx = parseInt(row.dataset.idx,10);
+          var p = loadPacks()[idx];
+          if(!p) return;
+          editingPackIdx = idx;
+          document.getElementById("np-nom").value = p.name;
+          document.getElementById("np-vente").value = p.venteHT;
+          document.getElementById("np-cout").value = p.coutHT;
+          document.getElementById("btn-save-pack").textContent = "Mettre à jour le pack";
+          document.getElementById("btn-cancel-pack").style.display = "block";
+        });
+      });
+    }
+    refreshStats();
+  }
+  document.getElementById("btn-save-pack").onclick = function(){
+    var name = document.getElementById("np-nom").value.trim();
+    var vente = parseFloat(document.getElementById("np-vente").value)||0;
+    var cout = parseFloat(document.getElementById("np-cout").value)||0;
+    if(!name){ document.getElementById("np-nom").focus(); return; }
+    var packs = loadPacks();
+    if(editingPackIdx !== null){
+      packs[editingPackIdx] = {name:name, venteHT:vente, coutHT:cout};
+    } else {
+      packs.push({name:name, venteHT:vente, coutHT:cout});
+    }
+    savePacks(packs);
+    editingPackIdx = null;
+    document.getElementById("np-nom").value = "";
+    document.getElementById("np-vente").value = "";
+    document.getElementById("np-cout").value = "";
+    document.getElementById("btn-save-pack").textContent = "Enregistrer le pack";
+    document.getElementById("btn-cancel-pack").style.display = "none";
+    refreshPackUI();
+  };
+  document.getElementById("btn-cancel-pack").onclick = function(){
+    editingPackIdx = null;
+    document.getElementById("np-nom").value = "";
+    document.getElementById("np-vente").value = "";
+    document.getElementById("np-cout").value = "";
+    document.getElementById("btn-save-pack").textContent = "Enregistrer le pack";
+    document.getElementById("btn-cancel-pack").style.display = "none";
+  };
+  document.getElementById("f-catalogue").addEventListener("change", function(){
+    var idx = this.value;
+    if(idx === "") return;
+    var p = loadPacks()[parseInt(idx,10)];
+    if(!p) return;
+    document.getElementById("f-produit").value = p.name;
+    document.getElementById("f-vente").value = p.venteHT;
+    document.getElementById("f-cout").value = p.coutHT;
+    updateMargin();
+  });
+  refreshPackUI();
+
+  // ----- Margin -----
+  function updateMargin(){
+    var vente = parseFloat(document.getElementById("f-vente").value)||0;
+    var cout = parseFloat(document.getElementById("f-cout").value)||0;
+    var remise = parseFloat(document.getElementById("f-remise").value)||0;
+    var marge = vente - remise - cout;
+    document.getElementById("margin-val").textContent = fmt(marge) + " de marge";
+    var badge = document.getElementById("margin-badge");
+    if(marge >= 0){ badge.textContent = "RENTABLE"; badge.className = "badge ok"; }
+    else { badge.textContent = "NON RENTABLE"; badge.className = "badge bad"; }
+  }
+  ["f-vente","f-cout","f-remise"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", updateMargin);
+  });
+
+  // ----- Transaction / receipt -----
+  function collectData(){
+    var vente = parseFloat(document.getElementById("f-vente").value)||0;
+    var cout = parseFloat(document.getElementById("f-cout").value)||0;
+    var remise = parseFloat(document.getElementById("f-remise").value)||0;
+    var tvaRate = parseFloat(document.getElementById("f-tva").value)||0;
+    var tot = computeTotals(vente, remise, tvaRate);
+    return {
+      client: document.getElementById("f-client").value.trim(),
+      clientId: document.getElementById("f-id").value.trim(),
+      vendeur: document.getElementById("f-vendeur").value.trim(),
+      produit: document.getElementById("f-produit").value.trim(),
+      venteHT: vente,
+      coutHT: cout,
+      remise: remise,
+      note: document.getElementById("f-note").value.trim(),
+      tvaRate: tvaRate,
+      totalHT: tot.totalHT,
+      tva: tot.tva,
+      totalTTC: tot.totalTTC,
+      marge: vente - remise - cout,
+      date: dateStr()
+    };
+  }
+
+  // ----- Calendar -----
+  var calCursor = new Date(); calCursor.setDate(1);
+  var selectedDay = null; // "DD/MM/YYYY" or null
+  var DOW = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+  var MONTHS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+  function refreshCalendar(){
+    var hist = loadHistory();
+    var byDay = {};
+    hist.forEach(function(r){
+      var k = dayKey(r.date);
+      if(!byDay[k]) byDay[k] = {count:0, ca:0};
+      byDay[k].count++; byDay[k].ca += (r.totalTTC||0);
+    });
+
+    document.getElementById("cal-month-label").textContent = MONTHS[calCursor.getMonth()] + " " + calCursor.getFullYear();
+
+    var y = calCursor.getFullYear(), m = calCursor.getMonth();
+    var firstDow = (new Date(y,m,1).getDay()+6)%7; // Monday=0
+    var daysInMonth = new Date(y,m+1,0).getDate();
+    var today = dateStr().split(" ")[0];
+
+    var html = DOW.map(function(d){ return '<div class="cal-dow">'+d+'</div>'; }).join("");
+    for(var i=0;i<firstDow;i++) html += '<div class="cal-cell empty"></div>';
+    for(var day=1; day<=daysInMonth; day++){
+      var key = pad(day)+"/"+pad(m+1)+"/"+y;
+      var info = byDay[key];
+      var cls = "cal-cell" + (info?" has-sales":"") + (key===today?" is-today":"") + (key===selectedDay?" is-selected":"");
+      html += '<div class="'+cls+'" data-day="'+key+'">'+
+        '<div class="cal-daynum">'+day+'</div>'+
+        (info ? '<div class="cal-count sensitive">'+info.count+' · '+fmt(info.ca)+'</div>' : '')+
+        '</div>';
+    }
+    document.getElementById("cal-grid").innerHTML = html;
+
+    document.querySelectorAll(".cal-cell.has-sales").forEach(function(cell){
+      cell.addEventListener("click", function(){
+        var key = cell.dataset.day;
+        selectedDay = (selectedDay === key) ? null : key;
+        refreshCalendar();
+        refreshHistory();
+        document.getElementById("hist-list").scrollIntoView({behavior:"smooth", block:"nearest"});
+      });
+    });
+
+    var bar = document.getElementById("cal-filter-bar");
+    if(selectedDay){
+      bar.style.display = "flex";
+      bar.innerHTML = 'Ventes du '+selectedDay+' <button type="button" id="cal-clear">Voir toutes les dates</button>';
+      document.getElementById("cal-clear").addEventListener("click", function(){
+        selectedDay = null;
+        refreshCalendar();
+        refreshHistory();
+      });
+    } else {
+      bar.style.display = "none";
+      bar.innerHTML = "";
+    }
+  }
+  document.getElementById("cal-prev").addEventListener("click", function(){
+    calCursor.setMonth(calCursor.getMonth()-1);
+    refreshCalendar();
+  });
+  document.getElementById("cal-next").addEventListener("click", function(){
+    calCursor.setMonth(calCursor.getMonth()+1);
+    refreshCalendar();
+  });
+
+  var histFilter = "";
+  function refreshHistory(){
+    var list = loadHistory();
+    var wrap = document.getElementById("hist-list");
+    var filtered = list.filter(function(r){
+      if(selectedDay && dayKey(r.date) !== selectedDay) return false;
+      if(!histFilter) return true;
+      var hay = ((r.client||"")+" "+(r.produit||"")).toLowerCase();
+      return hay.indexOf(histFilter) !== -1;
+    });
+    if(!filtered.length){
+      wrap.innerHTML = '<div class="empty-note">'+(list.length ? "Aucune vente ne correspond à ce filtre." : "Aucune vente pour l\u2019instant — validez une vente pour la voir apparaître ici.")+'</div>';
+      return;
+    }
+    var html = '<div class="hist-list">';
+    filtered.slice().reverse().forEach(function(r){
+      html += '<div class="hist-row" data-realidx="'+list.indexOf(r)+'">'+
+        '<div class="hn">#'+r.numStr+'</div>'+
+        '<div class="hc"><b>'+escapeHtml(r.produit||r.client||"Vente")+'</b><small>'+escapeHtml(r.client||"—")+' · '+escapeHtml(r.date)+'</small></div>'+
+        '<div class="hm badge sensitive '+(r.marge>=0?"ok":"bad")+'">'+fmt(r.marge)+'</div>'+
+        '<div class="ht">'+fmt(r.totalTTC)+'</div>'+
+        '<button class="hdel" title="Supprimer">🗑</button>'+
+        '</div>';
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+    wrap.querySelectorAll(".hist-row").forEach(function(row){
+      var idx = parseInt(row.dataset.realidx,10);
+      row.addEventListener("click", function(e){
+        if(e.target.classList.contains("hdel")) return;
+        showReceipt(list[idx]);
+        window.scrollTo({top:0, behavior:"smooth"});
+      });
+      row.querySelector(".hdel").addEventListener("click", function(e){
+        e.stopPropagation();
+        showConfirm("Supprimer cette vente de l\u2019historique ?", function(){
+          var cur = loadHistory();
+          cur.splice(idx,1);
+          saveHistory(cur);
+          refreshHistory();
+          refreshStats();
+          refreshCalendar();
+          showToast("Vente supprimée.");
+        });
+      });
+    });
+  }
+  document.getElementById("hist-search").addEventListener("input", function(){
+    histFilter = this.value.trim().toLowerCase();
+    refreshHistory();
+  });
+  document.getElementById("btn-export").addEventListener("click", function(){
+    var list = loadHistory();
+    if(!list.length){ showToast("Aucune vente à exporter."); return; }
+    var headers = ["Numero","Date","Client","ID Client","Vendeur","Produit","Vente HT","Cout","Remise","TVA %","Total HT","TVA","Total TTC","Marge","Note"];
+    var rows = list.map(function(r){
+      return [r.numStr,r.date,r.client,r.clientId,r.vendeur,r.produit,r.venteHT,r.coutHT,r.remise,r.tvaRate,r.totalHT,r.tva,r.totalTTC,r.marge,r.note].map(csvEscape).join(";");
+    });
+    var csv = headers.join(";") + "\n" + rows.join("\n");
+    offerDownload("historique-comptoir.csv", "\ufeff"+csv);
+  });
+  document.getElementById("btn-reset-stats").addEventListener("click", function(){
+    showConfirm("Réinitialiser tout l\u2019historique des ventes et les statistiques ? Cette action est irréversible.", function(){
+      saveHistory([]);
+      try{ localStorage.setItem(LS_SEQ, "0"); }catch(e){}
+      selectedDay = null;
+      refreshHistory();
+      refreshStats();
+      refreshCalendar();
+      document.getElementById("receipt-actions").style.display = "none";
+      document.getElementById("receipt-holder").innerHTML = '<div class="empty-note">Remplissez le formulaire puis validez la vente pour voir l\u2019aperçu ici.</div>';
+      showToast("Statistiques réinitialisées.");
+    });
+  });
+
+  var currentReceiptEl = null;
+  function showReceipt(data){
+    var holder = document.getElementById("receipt-holder");
+    holder.innerHTML = "";
+    currentReceiptEl = buildReceiptEl(data, false);
+    currentReceiptEl.id = "print-target";
+    holder.appendChild(currentReceiptEl);
+    document.getElementById("receipt-actions").style.display = "flex";
+    document.getElementById("btn-download").onclick = function(){
+      downloadReceiptImage(currentReceiptEl, "ticket-"+data.numStr);
+    };
+    document.getElementById("btn-print").onclick = function(){
+      window.print();
+    };
+  }
+
+  document.getElementById("btn-generate").onclick = function(){
+    var data = collectData();
+    if(!data.produit){ document.getElementById("f-produit").focus(); return; }
+    data.numStr = String(nextSeq()).padStart(4,"0");
+    var hist = loadHistory();
+    hist.push(data);
+    saveHistory(hist);
+    showReceipt(data);
+    refreshHistory();
+    refreshStats();
+    refreshCalendar();
+  };
+  document.getElementById("btn-reset").onclick = function(){
+    ["f-client","f-id","f-vendeur","f-produit","f-note"].forEach(function(id){ document.getElementById(id).value=""; });
+    document.getElementById("f-tva").value = "20";
+    document.getElementById("f-vente").value = "0";
+    document.getElementById("f-cout").value = "0";
+    document.getElementById("f-remise").value = "0";
+    document.getElementById("f-catalogue").value = "";
+    updateMargin();
+    document.getElementById("receipt-actions").style.display = "none";
+    document.getElementById("receipt-holder").innerHTML = '<div class="empty-note">Remplissez le formulaire puis validez la vente pour voir l\u2019aperçu ici.</div>';
+  };
+
+  document.getElementById("receipt-holder").innerHTML = '<div class="empty-note">Remplissez le formulaire puis validez la vente pour voir l\u2019aperçu ici.</div>';
+  updateMargin();
+  refreshHistory();
+  refreshStats();
+  refreshCalendar();
+}
+
+// ---------- Boot ----------
+var hash = location.hash || "";
+if(hash.indexOf("#r=") === 0){
+  try{
+    var slim = JSON.parse(b64decode(decodeURIComponent(hash.slice(3))));
+    renderTicketView(expandFromQr(slim));
+  }catch(e){
+    renderHome();
+  }
+} else {
+  renderHome();
+}
+})();
+</script>
+</body>
+</html>
