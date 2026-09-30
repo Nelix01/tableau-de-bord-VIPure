@@ -400,17 +400,17 @@ function cloudListen(key, callback){
 }
 
 var LS_KEY = "comptoir_tickets_v1";
-var LS_SEQ = "comptoir_seq_v1";
 var LS_PACKS = "comptoir_packs_v1";
 var LS_DISCREET = "comptoir_discreet_v1";
 var LS_PROFILE = "comptoir_profile_v1";
 var PROFILE_EMOJIS = ["🙂","😎","🦊","🐼","🐯","🌟","🔥","🍀","🎯","🧾"];
 var PROFILE_COLORS = ["#3457D5","#FF3B30","#FF9500","#12A150","#AF52DE","#5856D6"];
 
-// Mémoires synchronisées en temps réel
-var cachedHistory = [], cachedPacks = [], cachedMsgs = [], cachedPb = [], cachedStock = [], cachedContacts = [], cachedTasks = [], cachedNotes = [], cachedPhotos = [], cachedCal = [], cachedNews = [], cachedSat = [];
+// Mémoires synchronisées en temps réel pour TOUT l'état de l'application
+var cachedHistory = [], cachedPacks = [], cachedMsgs = [], cachedPb = [], cachedStock = [], cachedContacts = [], cachedTasks = [], cachedNotes = [], cachedPhotos = [], cachedCal = [], cachedNews = [], cachedSat = [], cachedGame = [];
+var cachedPins = null, cachedRoles = null, cachedCfg = null, cachedLog = [];
 
-// Écouteurs en temps réel pour tout le monde
+// Écouteurs en temps réel pour toutes les données et réglages
 cloudListen(LS_KEY, function(d){ cachedHistory = d; if(typeof refreshHistory === "function") refreshHistory(); if(typeof refreshStats === "function") refreshStats(); });
 cloudListen(LS_PACKS, function(d){ cachedPacks = d; if(typeof refreshPackUI === "function") refreshPackUI(); });
 cloudListen("comptoir_msgs_v1", function(d){ cachedMsgs = d; if(typeof renderMessages === "function" && document.querySelector(".msg-wrap")) renderMessages(msgPeer); });
@@ -423,6 +423,13 @@ cloudListen("comptoir_ag_photos_v1", function(d){ cachedPhotos = d; if(typeof re
 cloudListen("comptoir_ag_cal_v1", function(d){ cachedCal = d; if(typeof renderCalendar === "function") renderCalendar(); });
 cloudListen("comptoir_news_v1", function(d){ cachedNews = d; if(typeof renderNews === "function") renderNews(); });
 cloudListen("comptoir_sat_v1", function(d){ cachedSat = d; if(typeof satRefresh === "function") satRefresh(); });
+cloudListen("comptoir_game_v1", function(d){ cachedGame = d; if(typeof renderGame === "function" && document.querySelector(".msg-wrap")) renderGame(); });
+
+// Synchronisation cloud pour les paramètres et réglages sensibles
+cloudListen("comptoir_pins_v1", function(d){ cachedPins = d; });
+cloudListen("comptoir_roledefs_v1", function(d){ cachedRoles = d; if(typeof paintRoles === "function") paintRoles(); });
+cloudListen("comptoir_cfg_v1", function(d){ cachedCfg = d; applyTheme(); });
+cloudListen("comptoir_log", function(d){ cachedLog = d; });
 
 function loadHistory(){ return cachedHistory; }
 function saveHistory(list){ cachedHistory = list; cloudSet(LS_KEY, list); }
@@ -547,19 +554,24 @@ var BUILTIN_ROLES = {
   gestionnaire: {name:"Gestionnaire", color:"#12A150", builtin:true, perms:{seeMargins:true, manageCatalog:true, deleteSales:true, manageRoles:false, exportData:true, postNews:true}},
   vendeur: {name:"Vendeur", color:"#69748A", builtin:true, perms:{seeMargins:false, manageCatalog:false, deleteSales:false, manageRoles:false}}
 };
-var LS_PINS = "comptoir_pins_v1", LS_ROLES = "comptoir_roledefs_v1", LS_CFG = "comptoir_cfg_v1";
+
 var DEFAULT_PINS = [
   {id:"u-admin", code:"0703", name:"Admin", emoji:"👑", roleId:"admin"},
   {id:"u-gest", code:"2580", name:"Gestionnaire", emoji:"🧑‍💼", roleId:"gestionnaire"},
   {id:"u-vend", code:"1379", name:"Vendeur", emoji:"🛍️", roleId:"vendeur"}
 ];
-function lsGet(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
-function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-function loadPins(){ var p = lsGet(LS_PINS, null); return (p && p.length) ? p : DEFAULT_PINS.slice(); }
-function savePins(p){ lsSet(LS_PINS, p); }
-var customRoles = lsGet(LS_ROLES, {}), globalConfig = Object.assign({companyName:"", defaultTva:20}, lsGet(LS_CFG, {}));
+
+function loadPins(){ return (cachedPins && cachedPins.length) ? cachedPins : DEFAULT_PINS.slice(); }
+function savePins(p){ cachedPins = p; cloudSet("comptoir_pins_v1", p); }
+
+function getCustomRoles(){ return cachedRoles || {}; }
+function saveCustomRoles(r){ cachedRoles = r; cloudSet("comptoir_roledefs_v1", r); }
+
+function getGlobalConfig(){ return Object.assign({companyName:"", defaultTva:20}, cachedCfg || {}); }
+function saveGlobalConfig(cfg){ cachedCfg = cfg; cloudSet("comptoir_cfg_v1", cfg); applyTheme(); }
+
 var currentUser = null, myRoleId = "vendeur", identityListeners = [];
-function allRoles(){ return Object.assign({}, BUILTIN_ROLES, customRoles); }
+function allRoles(){ return Object.assign({}, BUILTIN_ROLES, getCustomRoles()); }
 var PERM_DEFS = [
   {g:"Applications", k:"useCaisse", l:"Accéder à la Caisse", d:"Ouvre l\u2019application Caisse", def:true},
   {k:"useAgenda", l:"Calendrier, Notes, Photos, Tâches", d:"Accès aux applications de l\u2019agenda", def:true},
@@ -576,23 +588,50 @@ var PERM_DEFS = [
 function myPerms(){ var r = allRoles()[myRoleId] || BUILTIN_ROLES.vendeur, p = {};
   PERM_DEFS.forEach(function(d){ p[d.k] = myRoleId === "admin" ? true : (r.perms[d.k] !== undefined ? !!r.perms[d.k] : !!d.def); }); return p; }
 function canSettings(){ var p = myPerms(); return p.manageRoles || p.exportData || p.viewLog; }
-function logEvent(t, who){ var l = lsGet("comptoir_log", []); l.push({ts:Date.now(), who: who || (currentUser ? currentUser.name : "—"), t:t}); lsSet("comptoir_log", l.slice(-100)); }
-function pinLocked(){ var r = Math.ceil((lsGet("comptoir_lock", 0) - Date.now())/1000); if(r > 0){ showToast("Trop d\u2019essais. Réessayez dans "+r+" s."); return true; } return false; }
+
+function logEvent(t, who){ 
+  var l = cachedLog || []; 
+  l.push({ts:Date.now(), who: who || (currentUser ? currentUser.name : "—"), t:t}); 
+  cachedLog = l.slice(-100); 
+  cloudSet("comptoir_log", cachedLog); 
+}
+
+function pinLocked(){ var r = Math.ceil((+localStorage.getItem("comptoir_lock_timer") - Date.now())/1000); if(r > 0){ showToast("Trop d\u2019essais. Réessayez dans "+r+" s."); return true; } return false; }
 var pinFails = 0;
-function pinFail(){ logEvent("Code incorrect", "—"); pinFails++; var m = +globalConfig.maxTries || 0;
-  if(m && pinFails >= m){ pinFails = 0; lsSet("comptoir_lock", Date.now()+30000); logEvent("Accès bloqué 30 s", "—"); showToast("Trop d\u2019essais : bloqué 30 s."); } }
+function pinFail(){ logEvent("Code incorrect", "—"); pinFails++; var cfg = getGlobalConfig(), m = +cfg.maxTries || 0;
+  if(m && pinFails >= m){ pinFails = 0; localStorage.setItem("comptoir_lock_timer", Date.now()+30000); logEvent("Accès bloqué 30 s", "—"); showToast("Trop d\u2019essais : bloqué 30 s."); } }
 var idleT = null;
-function bumpIdle(){ clearTimeout(idleT); var m = +globalConfig.autoLock || 0;
+function bumpIdle(){ clearTimeout(idleT); var cfg = getGlobalConfig(), m = +cfg.autoLock || 0;
   if(unlocked && m > 0) idleT = setTimeout(function(){ document.querySelectorAll(".overlay,.modal-overlay").forEach(function(x){ x.remove(); }); unlocked = false; renderHome(); }, m*60000); }
 ["click","keydown","touchstart"].forEach(function(ev){ document.addEventListener(ev, bumpIdle, true); });
-function applyTheme(){ var t = globalConfig.theme; if(t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme"); }
-function backupData(){ var o = {}; try{ for(var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if(k.indexOf("comptoir_") === 0 && k !== "comptoir_lock") o[k] = localStorage.getItem(k); } }catch(e){} return JSON.stringify(o); }
-function wipeData(pref){ try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf(pref) === 0) localStorage.removeItem(k); }); }catch(e){} }
+
+function applyTheme(){ var cfg = getGlobalConfig(), t = cfg.theme; if(t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme"); }
+
+function backupData(){ 
+  var o = {
+    history: cachedHistory,
+    packs: cachedPacks,
+    pins: cachedPins,
+    roles: cachedRoles,
+    config: cachedCfg,
+    msgs: cachedMsgs,
+    stock: cachedStock,
+    contacts: cachedContacts,
+    tasks: cachedTasks,
+    notes: cachedNotes,
+    cal: cachedCal,
+    news: cachedNews,
+    game: cachedGame
+  }; 
+  return JSON.stringify(o, null, 2); 
+}
+
 function myRoleDef(){ return allRoles()[myRoleId] || BUILTIN_ROLES.vendeur; }
 function computeMyRole(){ myRoleId = (currentUser && allRoles()[currentUser.roleId]) ? currentUser.roleId : "vendeur"; }
 function onIdentityChange(){ computeMyRole(); identityListeners.forEach(function(f){ f(); }); }
 
 function slugify(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || ("role-"+Date.now().toString(36)); }
+
 function openSettingsSheet(){
   var P = myPerms();
   var TABS = [["gen","Général","manageRoles"],["sec","Sécurité","manageRoles"],["roles","Rôles","manageRoles"],["pins","Codes","manageRoles"],["data","Données","exportData"],["log","Journal","viewLog"]].filter(function(t){ return P[t[2]]; });
@@ -604,22 +643,43 @@ function openSettingsSheet(){
   o.addEventListener("click", function(e){ if(e.target === o) close(); });
   o.querySelector("#st-x").onclick = close;
   var body = o.querySelector("#st-body");
-  function saveCfg(patch){ globalConfig = Object.assign(globalConfig, patch); lsSet(LS_CFG, globalConfig); applyTheme(); showToast("Enregistré."); }
+  
+  function saveCfg(patch){ 
+    var cfg = getGlobalConfig();
+    var newCfg = Object.assign(cfg, patch);
+    saveGlobalConfig(newCfg); 
+    showToast("Enregistré."); 
+  }
+  
   function opts(list, cur){ return list.map(function(x){ return '<option value="'+x[0]+'"'+(String(cur)===String(x[0])?' selected':'')+'>'+x[1]+'</option>'; }).join(""); }
   function armDel(btn, label, fn){ if(!btn.classList.contains("arm")){ btn.classList.add("arm"); btn.textContent = "Confirmer ?"; setTimeout(function(){ btn.classList.remove("arm"); btn.textContent = label; }, 2500); return; } fn(); }
 
   function paintGen(){
-    body.innerHTML = '<label>Nom de l\u2019entreprise</label><input id="g-name" value="'+escapeHtml(globalConfig.companyName)+'" placeholder="Affiché sur l\u2019accueil">'+
-      '<label>TVA par défaut (%)</label><input id="g-tva" type="number" step="0.5" value="'+(globalConfig.defaultTva||20)+'">'+
-      '<label>Thème</label><select id="g-theme" style="width:100%">'+opts([["auto","Automatique"],["light","Clair"],["dark","Sombre"]], globalConfig.theme||"auto")+'</select>'+
+    var cfg = getGlobalConfig();
+    body.innerHTML = '<label>Nom de l\u2019entreprise</label><input id="g-name" value="'+escapeHtml(cfg.companyName)+'" placeholder="Affiché sur l\u2019accueil">'+
+      '<label>TVA par défaut (%)</label><input id="g-tva" type="number" step="0.5" value="'+(cfg.defaultTva||20)+'">'+
+      '<label>Thème</label><select id="g-theme" style="width:100%">'+opts([["auto","Automatique"],["light","Clair"],["dark","Sombre"]], cfg.theme||"auto")+'</select>'+
       '<div class="sheet-actions"><button type="button" class="b-save2" id="g-save">Enregistrer</button></div>';
-    body.querySelector("#g-save").onclick = function(){ saveCfg({companyName: body.querySelector("#g-name").value.trim(), defaultTva: parseFloat(body.querySelector("#g-tva").value)||20, theme: body.querySelector("#g-theme").value}); logEvent("Réglages généraux modifiés"); };
+    body.querySelector("#g-save").onclick = function(){ 
+      saveCfg({
+        companyName: body.querySelector("#g-name").value.trim(), 
+        defaultTva: parseFloat(body.querySelector("#g-tva").value)||20, 
+        theme: body.querySelector("#g-theme").value
+      }); 
+      logEvent("Réglages généraux modifiés"); 
+    };
   }
+
   function paintSec(){
-    body.innerHTML = '<label>Verrouillage automatique (inactivité)</label><select id="s-lock" style="width:100%">'+opts([[0,"Jamais"],[1,"1 minute"],[5,"5 minutes"],[15,"15 minutes"]], globalConfig.autoLock||0)+'</select>'+
-      '<label>Essais de code avant blocage (30 s)</label><select id="s-max" style="width:100%">'+opts([[0,"Illimité"],[3,"3 essais"],[5,"5 essais"]], globalConfig.maxTries||0)+'</select>'+
+    var cfg = getGlobalConfig();
+    body.innerHTML = '<label>Verrouillage automatique (inactivité)</label><select id="s-lock" style="width:100%">'+opts([[0,"Jamais"],[1,"1 minute"],[5,"5 minutes"],[15,"15 minutes"]], cfg.autoLock||0)+'</select>'+
+      '<label>Essais de code avant blocage (30 s)</label><select id="s-max" style="width:100%">'+opts([[0,"Illimité"],[3,"3 essais"],[5,"5 essais"]], cfg.maxTries||0)+'</select>'+
       '<div class="sheet-actions"><button type="button" class="b-save2" id="s-save">Enregistrer</button></div>';
-    body.querySelector("#s-save").onclick = function(){ saveCfg({autoLock:+body.querySelector("#s-lock").value, maxTries:+body.querySelector("#s-max").value}); logEvent("Sécurité modifiée"); bumpIdle(); };
+    body.querySelector("#s-save").onclick = function(){ 
+      saveCfg({autoLock:+body.querySelector("#s-lock").value, maxTries:+body.querySelector("#s-max").value}); 
+      logEvent("Sécurité modifiée"); 
+      bumpIdle(); 
+    };
   }
 
   function switches(perms){
@@ -631,7 +691,9 @@ function openSettingsSheet(){
     });
     return h;
   }
+
   function roleForm(id){
+    var customRoles = getCustomRoles();
     var ex = id ? customRoles[id] : null, COLS = ["#5856D6","#FF3B30","#FF9500","#12A150","#AF52DE","#3457D5","#FF2D55","#00A5B5"], col = ex ? ex.color : COLS[0];
     body.innerHTML = '<label>Nom du rôle</label><input id="rf-name" value="'+escapeHtml(ex?ex.name:"")+'" placeholder="Ex : Caissier, Stagiaire…"><label>Couleur</label>'+
       '<div class="colors2" id="rf-cols">'+COLS.map(function(c){ return '<button type="button" data-c="'+c+'" style="background:'+c+'" class="'+(c===col?"on":"")+'"></button>'; }).join("")+'</div>'+
@@ -643,12 +705,17 @@ function openSettingsSheet(){
       var name = body.querySelector("#rf-name").value.trim(); if(!name){ body.querySelector("#rf-name").focus(); return; }
       var rid = id || slugify(name); if(!id && allRoles()[rid]){ showToast("Ce nom est déjà pris."); return; }
       var perms = {}; body.querySelectorAll("[data-perm]").forEach(function(c){ perms[c.dataset.perm] = c.checked; });
-      customRoles[rid] = {name:name, color:col, perms:perms}; lsSet(LS_ROLES, customRoles);
-      if(currentUser){ computeMyRole(); } logEvent((id?"Rôle modifié : ":"Rôle créé : ")+name); showToast("Rôle enregistré."); paintRoles();
+      customRoles[rid] = {name:name, color:col, perms:perms}; 
+      saveCustomRoles(customRoles);
+      if(currentUser){ computeMyRole(); } 
+      logEvent((id?"Rôle modifié : ":"Rôle créé : ")+name); 
+      showToast("Rôle enregistré."); 
+      paintRoles();
     };
   }
+
   function paintRoles(){
-    var all = allRoles();
+    var all = allRoles(), customRoles = getCustomRoles();
     body.innerHTML = '<div id="rd-list"></div><div class="sheet-actions"><button type="button" class="b-save2" id="rd-new">＋ Nouveau rôle</button></div>';
     var perms = function(r){ return PERM_DEFS.filter(function(d){ return r.builtin && r.name==="Admin" ? true : (r.perms[d.k] !== undefined ? r.perms[d.k] : d.def); }).map(function(d){ return d.l; }).join(" · "); };
     body.querySelector("#rd-list").innerHTML = Object.keys(all).map(function(id){ var r = all[id];
@@ -659,26 +726,36 @@ function openSettingsSheet(){
     body.querySelectorAll("[data-edit]").forEach(function(b){ b.onclick = function(){ roleForm(b.dataset.edit); }; });
     body.querySelectorAll("[data-del]").forEach(function(b){ b.onclick = function(){ armDel(b, "Supprimer", function(){
       if(loadPins().some(function(x){ return x.roleId === b.dataset.del; })){ showToast("Ce rôle est encore utilisé par un code."); return; }
-      logEvent("Rôle supprimé : "+customRoles[b.dataset.del].name); delete customRoles[b.dataset.del]; lsSet(LS_ROLES, customRoles); paintRoles(); }); }; });
+      logEvent("Rôle supprimé : "+customRoles[b.dataset.del].name); delete customRoles[b.dataset.del]; saveCustomRoles(customRoles); paintRoles(); }); }; });
   }
 
   function adminCount(pins){ return pins.filter(function(p){ var r = allRoles()[p.roleId]; return r && (p.roleId === "admin" || r.perms.manageRoles); }).length; }
+  
   function paintPins(){
     var pins = loadPins(), roles = allRoles();
     var ro = function(sel){ return Object.keys(roles).map(function(id){ return '<option value="'+id+'"'+(id===sel?' selected':'')+'>'+escapeHtml(roles[id].name)+'</option>'; }).join(""); };
-    body.innerHTML = '<div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px">Chaque code ouvre l\u2019application avec les permissions de son rôle (onglet Rôles).</div>'+
+    body.innerHTML = '<div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px">Chaque code ouvre l\u2019application avec les permissions de son rôle. Partagé sur tous vos appareils.</div>'+
       pins.map(function(p){ return '<div class="assign-row"><span>'+escapeHtml(p.emoji||"🙂")+'</span><span class="nm">'+escapeHtml(p.name)+' <span style="color:var(--ink-soft)">· '+escapeHtml(p.code)+'</span></span><select class="role-select" data-role="'+p.id+'">'+ro(p.roleId)+'</select><button type="button" class="danger-ghost" data-del="'+p.id+'">✕</button></div>'; }).join("")+
       '<label style="margin-top:16px">Nouveau code</label><input id="pn-name" placeholder="Nom de la personne"><input id="pn-code" inputmode="numeric" maxlength="4" placeholder="Code à 4 chiffres" style="margin-top:8px">'+
       '<select id="pn-role" class="role-select" style="margin-top:8px;width:100%">'+ro("vendeur")+'</select><div class="sheet-actions"><button type="button" class="b-save2" id="pn-add">Ajouter</button></div>';
-    body.querySelectorAll("[data-role]").forEach(function(sel){ sel.onchange = function(){
-      var l = loadPins(), p = l.filter(function(x){ return x.id === sel.dataset.role; })[0], old = p.roleId; p.roleId = sel.value;
-      if(!adminCount(l)){ showToast("Il faut au moins un administrateur."); sel.value = old; return; }
-      savePins(l); if(currentUser && currentUser.id === p.id) currentUser.roleId = p.roleId; logEvent("Rôle de "+p.name+" modifié"); showToast("Rôle modifié."); }; });
-    body.querySelectorAll("[data-del]").forEach(function(b){ b.onclick = function(){
-      var l = loadPins().filter(function(x){ return x.id !== b.dataset.del; });
-      if(currentUser && currentUser.id === b.dataset.del){ showToast("Vous ne pouvez pas supprimer votre propre code."); return; }
-      if(!adminCount(l)){ showToast("Il faut au moins un administrateur."); return; }
-      savePins(l); logEvent("Code supprimé"); paintPins(); }; });
+    
+    body.querySelectorAll("[data-role]").forEach(function(sel){ 
+      sel.onchange = function(){
+        var l = loadPins(), p = l.filter(function(x){ return x.id === sel.dataset.role; })[0], old = p.roleId; p.roleId = sel.value;
+        if(!adminCount(l)){ showToast("Il faut au moins un administrateur."); sel.value = old; return; }
+        savePins(l); if(currentUser && currentUser.id === p.id) currentUser.roleId = p.roleId; logEvent("Rôle de "+p.name+" modifié"); showToast("Rôle modifié."); 
+      }; 
+    });
+    
+    body.querySelectorAll("[data-del]").forEach(function(b){ 
+      b.onclick = function(){
+        var l = loadPins().filter(function(x){ return x.id !== b.dataset.del; });
+        if(currentUser && currentUser.id === b.dataset.del){ showToast("Vous ne pouvez pas supprimer votre propre code."); return; }
+        if(!adminCount(l)){ showToast("Il faut au moins un administrateur."); return; }
+        savePins(l); logEvent("Code supprimé"); paintPins(); 
+      }; 
+    });
+    
     body.querySelector("#pn-add").onclick = function(){
       var name = body.querySelector("#pn-name").value.trim(), code = body.querySelector("#pn-code").value.trim();
       if(!name){ body.querySelector("#pn-name").focus(); return; }
@@ -690,15 +767,16 @@ function openSettingsSheet(){
   }
 
   function paintData(){
-    body.innerHTML = '<div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-bottom:10px">Vos données sont stockées en ligne et partagées en temps réel.</div>'+
+    body.innerHTML = '<div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-bottom:10px">Toutes vos données (codes, ventes, catalogue, notes) sont hébergées et synchronisées en ligne.</div>'+
       '<button type="button" class="b-save2" id="d-exp" style="width:100%;border:none;border-radius:8px;padding:12px;font-weight:600;cursor:pointer">⬇ Exporter une sauvegarde complète</button>';
     body.querySelector("#d-exp").onclick = function(){ offerDownload("sauvegarde-comptoir-"+new Date().toISOString().slice(0,10)+".json", backupData()); logEvent("Sauvegarde exportée"); };
   }
+
   function paintLog(){
-    var l = lsGet("comptoir_log", []).slice().reverse();
+    var l = (cachedLog || []).slice().reverse();
     body.innerHTML = (l.length ? l.slice(0,60).map(function(e){ return '<div class="assign-row"><span class="nm"><b>'+escapeHtml(e.who)+'</b> · '+escapeHtml(e.t)+'</span><span style="font-size:11px;color:var(--ink-soft)">'+dateStr(new Date(e.ts))+'</span></div>'; }).join("") : '<div class="hint">Aucune activité.</div>')+
       (P.manageRoles && l.length ? '<div class="sheet-actions"><button type="button" class="b-x2" id="l-clr">Vider le journal</button></div>' : '');
-    var c = body.querySelector("#l-clr"); if(c) c.onclick = function(){ lsSet("comptoir_log", []); paintLog(); };
+    var c = body.querySelector("#l-clr"); if(c) c.onclick = function(){ cachedLog = []; cloudSet("comptoir_log", []); paintLog(); };
   }
 
   var paint = {gen:paintGen, sec:paintSec, roles:paintRoles, pins:paintPins, data:paintData, log:paintLog};
@@ -706,7 +784,6 @@ function openSettingsSheet(){
   paint[TABS[0][0]]();
 }
 
-var PIN = "0703";
 var unlocked = false;
 
 function askPin(){
@@ -748,7 +825,7 @@ function renderHome(){
         '<button type="button" class="home-tile" id="home-set"><span class="home-square alt6">⚙️</span><span class="lbl">Réglages</span></button>'+
         '<button type="button" class="home-tile" id="home-news"><span class="home-square alt7">📰</span><span class="lbl">Nouveautés</span></button>'+
         '<button type="button" class="home-tile ag-tile" id="home-cal"><span class="home-square alt">📅</span><span class="lbl">Calendrier</span></button>'+
-        '<button type="button" class="home-tile ag-tile" id="home-notes"><span class="home-square alt2">🗒️</span><span class="lbl">Notes</span></button>'+
+        '<button type="button" class="home-tile ag-tile" id="home-notes"><span class="home-square alt2">🗒️️</span><span class="lbl">Notes</span></button>'+
         '<button type="button" class="home-tile ag-tile" id="home-photos"><span class="home-square alt3">📷</span><span class="lbl">Photos</span></button>'+
         '<button type="button" class="home-tile ag-tile" id="home-tasks"><span class="home-square alt4">✅</span><span class="lbl">Tâches</span></button>'+
         '<button type="button" class="home-tile ag-tile" id="home-game"><span class="home-square" style="background:linear-gradient(155deg,#5856D6,#3634A3)">🎮</span><span class="lbl">Jeu</span></button>'+
@@ -762,7 +839,8 @@ function renderHome(){
   document.getElementById("home-set").addEventListener("click", openSettingsSheet);
   var HP = myPerms(), hide = function(el, ok){ if(el && !ok) el.style.display = "none"; };
   hide(document.getElementById("home-caisse"), HP.useCaisse); hide(document.getElementById("home-msg"), HP.useMessages); hide(document.getElementById("home-set"), canSettings());
-  typeTitle(document.getElementById("home-title"), "Tableau de bord VIPure");
+  var cfg = getGlobalConfig();
+  typeTitle(document.getElementById("home-title"), cfg.companyName || "Tableau de bord VIPure");
   document.getElementById("home-skin").addEventListener("click", openSkinSheet);
   document.getElementById("home-news").addEventListener("click", renderNews);
   document.getElementById("home-cal").addEventListener("click", renderCalendar);
@@ -939,6 +1017,7 @@ function downloadReceiptImage(receiptEl, filenameBase){
 function renderApp(){
   var app = document.getElementById("app");
   document.body.classList.toggle("is-discreet", isDiscreet());
+  var cfg = getGlobalConfig();
   app.innerHTML =
     '<div class="wrap">'+
       '<header class="top"><div><h1>Comptoir</h1><p>Gérez vos packs, enregistrez une vente, partagez le ticket.</p></div>'+
@@ -970,7 +1049,7 @@ function renderApp(){
             '</div>'+
             '<div class="row2">'+
               '<div><label for="f-vendeur">Vendeur</label><input id="f-vendeur" placeholder="Votre nom"></div>'+
-              '<div><label for="f-tva">TVA (%)</label><input id="f-tva" type="number" value="'+(globalConfig.defaultTva||20)+'" min="0" step="0.5"></div>'+
+              '<div><label for="f-tva">TVA (%)</label><input id="f-tva" type="number" value="'+(cfg.defaultTva||20)+'" min="0" step="0.5"></div>'+
             '</div>'+
             '<label for="f-produit">Produit (libellé final)</label>'+
             '<input id="f-produit" placeholder="Nom affiché sur le ticket">'+
@@ -1335,7 +1414,8 @@ function renderApp(){
   };
   document.getElementById("btn-reset").onclick = function(){
     ["f-client","f-id","f-vendeur","f-produit","f-note"].forEach(function(id){ document.getElementById(id).value=""; });
-    document.getElementById("f-tva").value = String(globalConfig.defaultTva||20);
+    var cfg = getGlobalConfig();
+    document.getElementById("f-tva").value = String(cfg.defaultTva||20);
     document.getElementById("f-vente").value = "0";
     document.getElementById("f-cout").value = "0";
     document.getElementById("f-remise").value = "0";
@@ -1570,7 +1650,9 @@ function renderNews(){
 
 var liveFn=null,satRefresh=null;
 window.addEventListener("storage",function(){ if(liveFn) liveFn(); });
-function beat(on){ if(!currentUser) return; var p=lsGet("comptoir_presence_v1",{}); p[currentUser.id]={t:Date.now(),on:on!==false&&unlocked}; lsSet("comptoir_presence_v1",p); }
+function beat(on){ if(!currentUser) return; var p=lsGetPresence(); p[currentUser.id]={t:Date.now(),on:on!==false&&unlocked}; savePresence(p); }
+function lsGetPresence(){ try{ return JSON.parse(localStorage.getItem("comptoir_presence_v1")||"{}"); }catch(e){ return {}; } }
+function savePresence(p){ try{ localStorage.setItem("comptoir_presence_v1", JSON.stringify(p)); }catch(e){} }
 setInterval(function(){ if(unlocked) beat(); },15000);
 window.addEventListener("beforeunload",function(){ beat(false); });
 function isOn(e){ return !!(e&&e.on&&Date.now()-e.t<45000); }
@@ -1580,7 +1662,7 @@ function $(el,s){ return el.querySelector(s); }
 function optHtml(list,cur){ return list.map(function(x){ return '<option value="'+x[0]+'"'+(x[0]===cur?' selected':'')+'>'+x[1]+'</option>'; }).join(""); }
 
 function openProfiles(){
-  var p=lsGet("comptoir_presence_v1",{}), us=loadPins().filter(function(u){ return p[u.id]; });
+  var p=lsGetPresence(), us=loadPins().filter(function(u){ return p[u.id]; });
   us.sort(function(a,b){ return (isOn(p[b.id])-isOn(p[a.id]))||p[b.id].t-p[a.id].t; });
   var o=sheet('<h4>Profils</h4>'+(us.length?us.map(function(u){ var on=isOn(p[u.id]), r=allRoles()[u.roleId];
     return '<div class="ag-row">'+avatarHtml(u,40)+'<div style="flex:1"><b>'+escapeHtml(u.name)+'</b><div style="font-size:12px;color:var(--ink-soft)">'+escapeHtml(r?r.name:"—")+' · '+(on?"actif maintenant":"vu "+since(p[u.id].t))+'</div></div><span class="chip" style="background:'+(on?"#34C759":"#8E8E93")+'">'+(on?"En ligne":"Hors ligne")+'</span></div>'; }).join(""):'<div class="empty-note">Aucun profil.</div>')+'<div class="sheet-actions"><button type="button" class="b-x2" id="x">Fermer</button></div>');
@@ -1645,7 +1727,14 @@ function renderContacts(){
   paintContacts();
 }
 
-function gameData(){ var g=lsGet("comptoir_game_v1",null); if(!g){ g=[["Histoire","🏛️"],["Géographie","🌍"],["Mathématiques","➗"],["Français","📖"],["Sciences","🔬"],["Anglais","🇬🇧"]].map(function(s){ return {id:agUid(),name:s[0],emoji:s[1],courses:[]}; }); lsSet("comptoir_game_v1",g); } return g; }
+function gameData(){
+  if(cachedGame && cachedGame.length) return cachedGame;
+  var def = [["Histoire","🏛️"],["Géographie","🌍"],["Mathématiques","➗"],["Français","📖"],["Sciences","🔬"],["Anglais","🇬🇧"]].map(function(s){ return {id:agUid(),name:s[0],emoji:s[1],courses:[]}; });
+  cachedGame = def;
+  cloudSet("comptoir_game_v1", def);
+  return def;
+}
+function saveGame(g){ cachedGame = g; cloudSet("comptoir_game_v1", g); }
 function renderGame(){
   var g=gameData(), adm=myPerms().manageRoles;
   var body=agShell("Jeu",{right:adm?'<button type="button" class="ag-plus" id="g-add" title="Nouvelle matière">＋</button>':""});
@@ -1653,7 +1742,7 @@ function renderGame(){
   body.querySelectorAll("[data-id]").forEach(function(d){ d.onclick=function(){ renderSubject(d.dataset.id); }; });
   if(adm) $(document,"#g-add").onclick=function(){ var o=sheet('<h4>Nouvelle matière</h4><label>Nom</label><input id="m-n" maxlength="40"><label>Emoji</label><input id="m-e" maxlength="4" value="📚"><div class="sheet-actions"><button type="button" class="b-x2" id="m-x">Annuler</button><button type="button" class="b-save2" id="m-s">Créer</button></div>');
     $(o,"#m-x").onclick=function(){ o.remove(); };
-    $(o,"#m-s").onclick=function(){ var n=$(o,"#m-n").value.trim(); if(!n) return; g.push({id:agUid(),name:n,emoji:$(o,"#m-e").value.trim()||"📚",courses:[]}); lsSet("comptoir_game_v1",g); renderGame(); }; };
+    $(o,"#m-s").onclick=function(){ var n=$(o,"#m-n").value.trim(); if(!n) return; g.push({id:agUid(),name:n,emoji:$(o,"#m-e").value.trim()||"📚",courses:[]}); saveGame(g); renderGame(); }; };
 }
 function renderSubject(sid){
   var g=gameData(), s=g.filter(function(x){ return x.id===sid; })[0]; if(!s){ renderGame(); return; }
@@ -1662,26 +1751,26 @@ function renderSubject(sid){
   body.innerHTML=(s.courses.length?s.courses.map(function(c){ return '<div class="ag-card ag-note" data-id="'+c.id+'"><b>'+escapeHtml(c.title)+'</b><small>'+escapeHtml((c.text||"").slice(0,80))+'</small></div>'; }).join(""):'<div class="ag-card"><div class="empty-note">Aucun cours pour le moment.</div></div>')+(adm?'<button type="button" class="danger-ghost" id="s-del" style="margin-top:8px">Supprimer la matière</button>':"");
   body.querySelectorAll("[data-id]").forEach(function(d){ d.onclick=function(){ renderCourse(sid,d.dataset.id); }; });
   if(can) $(document,"#c-add").onclick=function(){ courseForm(sid); };
-  if(adm) $(body,"#s-del").onclick=function(){ showConfirm("Supprimer cette matière et ses cours ?",function(){ lsSet("comptoir_game_v1",g.filter(function(x){ return x.id!==sid; })); renderGame(); }); };
+  if(adm) $(body,"#s-del").onclick=function(){ showConfirm("Supprimer cette matière et ses cours ?",function(){ saveGame(g.filter(function(x){ return x.id!==sid; })); renderGame(); }); };
 }
 function courseForm(sid,cid){
   var g=gameData(), s=g.filter(function(x){ return x.id===sid; })[0], c=s.courses.filter(function(x){ return x.id===cid; })[0]||{id:agUid(),title:"",text:""};
   var o=sheet('<h4>'+(cid?"Modifier":"Nouveau")+' cours</h4><label>Titre</label><input id="k-t" maxlength="100" value="'+escapeHtml(c.title)+'"><label>Contenu</label><textarea id="k-c" rows="10" maxlength="8000">'+escapeHtml(c.text)+'</textarea><div class="sheet-actions"><button type="button" class="b-x2" id="k-x">Annuler</button><button type="button" class="b-save2" id="k-s">Enregistrer</button></div>');
   $(o,"#k-x").onclick=function(){ o.remove(); };
-  $(o,"#k-s").onclick=function(){ var t=$(o,"#k-t").value.trim(); if(!t) return; c.title=t; c.text=$(o,"#k-c").value; if(!cid) s.courses.push(c); lsSet("comptoir_game_v1",g); o.remove(); cid?renderCourse(sid,c.id):renderSubject(sid); };
+  $(o,"#k-s").onclick=function(){ var t=$(o,"#k-t").value.trim(); if(!t) return; c.title=t; c.text=$(o,"#k-c").value; if(!cid) s.courses.push(c); saveGame(g); o.remove(); cid?renderCourse(sid,c.id):renderSubject(sid); };
 }
 function renderCourse(sid,cid){
   var g=gameData(), s=g.filter(function(x){ return x.id===sid; })[0], c=s&&s.courses.filter(function(x){ return x.id===cid; })[0]; if(!c){ renderSubject(sid); return; }
   var can=myPerms().postNews, body=agShell(c.title,{back:function(){ renderSubject(sid); },backLabel:"‹ "+s.name});
   body.innerHTML='<div class="ag-card" style="white-space:pre-wrap;font-size:15px;line-height:1.55">'+escapeHtml(c.text||"(cours vide)")+'</div>'+(can?'<div class="actions"><button type="button" class="ghost" id="k-e">Modifier</button><button type="button" class="danger-ghost" id="k-d">Supprimer</button></div>':"");
   if(can){ $(body,"#k-e").onclick=function(){ courseForm(sid,cid); };
-    $(body,"#k-d").onclick=function(){ showConfirm("Supprimer ce cours ?",function(){ s.courses=s.courses.filter(function(x){ return x.id!==cid; }); lsSet("comptoir_game_v1",g); renderSubject(sid); }); }; }
+    $(body,"#k-d").onclick=function(){ showConfirm("Supprimer ce cours ?",function(){ s.courses=s.courses.filter(function(x){ return x.id!==cid; }); saveGame(g); renderSubject(sid); }); }; }
 }
 
 var QT=[["note","Note /5"],["yn","Oui / Non"],["text","Texte libre"]];
 function satType(r){ var s=((r.note||"")+" "+(r.produit||"")).toLowerCase(); return /[ée]chang/.test(s)?"Échange":/retour|rembours/.test(s)?"Retour":/\bsav\b|r[ée]par|probl[èe]me/.test(s)?"SAV":"Vente"; }
 function satGen(r,type){
-  var pre=(r.client||"").trim().split(/\s+/)[0]||"cher client", pr=r.produit||"votre commande", co=globalConfig.companyName||"VIPure", vd=r.vendeur||"notre équipe";
+  var pre=(r.client||"").trim().split(/\s+/)[0]||"cher client", pr=r.produit||"votre commande", cfg=getGlobalConfig(), co=cfg.companyName||"VIPure", vd=r.vendeur||"notre équipe";
   var intro={"Vente":"Bonjour "+pre+", merci pour votre achat de « "+pr+" » chez "+co+" ! Votre avis nous aide à nous améliorer.","Échange":"Bonjour "+pre+", nous avons traité l’échange de « "+pr+" ». Comment s’est-il passé pour vous ?","Retour":"Bonjour "+pre+", suite au retour de « "+pr+" », nous aimerions savoir comment nous avons géré votre demande.","SAV":"Bonjour "+pre+", votre demande de SAV concernant « "+pr+" » a été traitée. Êtes-vous satisfait ?"}[type];
   var qs={"Vente":[["Êtes-vous satisfait de « "+pr+" » ?","note"],["Le produit correspond-il à la description ?","yn"],["Comment évaluez-vous l’accueil de "+vd+" ?","note"],["Recommanderiez-vous "+co+" ?","yn"]],"Échange":[["L’échange de « "+pr+" » s’est-il déroulé simplement ?","note"],["Le délai vous a-t-il convenu ?","yn"],["Le nouvel article vous convient-il ?","yn"]],"Retour":[["Le retour de « "+pr+" » a-t-il été simple ?","note"],["Avez-vous été remboursé dans un délai correct ?","yn"]],"SAV":[["Votre problème avec « "+pr+" » est-il résolu ?","yn"],["Comment évaluez-vous la réactivité de "+vd+" ?","note"]]}[type].concat([["Un commentaire ou une suggestion ?","text"]]);
   return {type:type,intro:intro,qs:qs.map(function(q){ return {q:q[0],t:q[1]}; }),outro:"Merci "+pre+" pour votre retour, à bientôt chez "+co+" !"};
