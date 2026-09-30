@@ -228,6 +228,50 @@ body.is-discreet .sensitive{filter:blur(7px); user-select:none;}
   #print-target{position:absolute; top:0; left:50%; transform:translateX(-50%);}
   .receipt-actions{display:none !important;}
 }
+
+/* Home badge + Messages (style Apple) */
+.home-square.alt5{background:linear-gradient(155deg,#34C759 0%,#248A3D 100%);box-shadow:0 24px 60px -18px rgba(52,199,89,.5);position:relative;overflow:visible}
+.home-badge{position:absolute;top:-8px;right:-8px;min-width:30px;height:30px;padding:0 9px;border-radius:15px;background:#FF3B30;color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.msg-wrap{height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;max-width:720px;margin:0 auto;background:var(--bg)}
+.msg-top{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 0;border-bottom:1px solid transparent}
+.msg-top.thread{border-color:var(--line);background:var(--panel);padding:6px 4px}
+.msg-back{background:none;border:none;color:#0A84FF;font-size:17px;cursor:pointer;padding:10px 12px}
+.msg-large{font-size:34px;font-weight:700;padding:0 18px 10px}
+.msg-list{background:var(--panel);margin:0 12px;border-radius:12px;overflow:auto}
+.m-conv{display:flex;align-items:center;gap:10px;padding:10px 14px 10px 6px;cursor:pointer;border-bottom:1px solid var(--line)}
+.m-conv:last-child{border-bottom:none}
+.m-dot{width:10px;height:10px;border-radius:50%;flex:none}
+.m-dot.on{background:#0A84FF}
+.m-av{border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
+.m-mid{flex:1;min-width:0}
+.m-name{font-weight:600;font-size:15.5px}
+.m-pre{color:var(--ink-soft);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.m-time{color:var(--ink-soft);font-size:13px;align-self:flex-start;padding-top:2px}
+.m-head{display:flex;flex-direction:column;align-items:center;gap:2px}
+.m-hname{font-size:12px;font-weight:600}
+.m-hname span{color:var(--ink-soft);font-weight:400}
+.m-scroll{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column}
+.m-stamp{text-align:center;color:var(--ink-soft);font-size:11.5px;margin:12px 0 6px}
+.m-from{font-size:11px;color:var(--ink-soft);margin:6px 0 2px 12px}
+.m-row{display:flex;margin:2px 0}
+.m-row.me{justify-content:flex-end}
+.m-bub{max-width:76%;padding:8px 13px;border-radius:19px;font-size:15.5px;line-height:1.35;word-wrap:break-word;overflow-wrap:anywhere}
+.m-row.me .m-bub{background:#0A84FF;color:#fff;border-bottom-right-radius:5px}
+.m-row.them .m-bub{background:var(--line);color:var(--ink);border-bottom-left-radius:5px}
+.m-status{text-align:right;font-size:11px;color:var(--ink-soft);margin:2px 4px 0 0}
+.m-empty{margin:auto;color:var(--ink-soft);font-size:14px}
+.m-compose{display:flex;align-items:flex-end;gap:8px;padding:8px 12px;background:var(--panel);border-top:1px solid var(--line)}
+.m-compose textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:19px;padding:8px 14px;font:inherit;font-size:15.5px;background:var(--bg);color:var(--ink);max-height:110px;outline:none;margin:0}
+.m-compose button{width:34px;height:34px;border-radius:50%;border:none;background:#0A84FF;color:#fff;font-size:19px;font-weight:700;cursor:pointer;flex:none}
+.m-compose button:disabled{opacity:.3;cursor:default}
+.home-square.alt6{background:linear-gradient(155deg,#8E8E93 0%,#48484A 100%);box-shadow:0 24px 60px -18px rgba(72,72,74,.5)}
+.tabs2{overflow-x:auto;gap:10px}.tabs2 button{white-space:nowrap}
+.sw{appearance:none;-webkit-appearance:none;width:42px;height:24px;border-radius:12px;background:var(--line);position:relative;flex:none;cursor:pointer;transition:.2s;margin:0;padding:0;border:none}
+.sw:after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw:checked{background:#34C759}.sw:checked:after{left:20px}
+.sw-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;margin:0;text-transform:none;letter-spacing:0;color:var(--ink)}
+.sw-row small{display:block;color:var(--ink-soft);font-size:11.5px;font-weight:400;margin-top:2px}
+.perm-group{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 2px}
 </style>
 </head>
 <body>
@@ -361,175 +405,187 @@ function offerDownload(filename, data){
       if(err && err.code !== "declined") showToast("Téléchargement impossible : " + (err && err.message ? err.message : "erreur inconnue"));
     });
   } else {
-    showToast("Le téléchargement n'est pas disponible dans cette vue.");
+    try{ var b = (data instanceof Blob) ? data : new Blob([data], {type:"text/plain;charset=utf-8"});
+      var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1500);
+    }catch(e){ showToast("Téléchargement impossible."); }
   }
 }
 
-// ---------- Identity & roles ----------
-var ADMIN_EMAIL = "tom.redix67@mail.com";
+// ---------- Identity & roles (local, compatible GitHub Pages) ----------
 var BUILTIN_ROLES = {
   admin: {name:"Admin", color:"#3457D5", builtin:true, perms:{seeMargins:true, manageCatalog:true, deleteSales:true, manageRoles:true}},
-  gestionnaire: {name:"Gestionnaire", color:"#12A150", builtin:true, perms:{seeMargins:true, manageCatalog:true, deleteSales:true, manageRoles:false}},
+  gestionnaire: {name:"Gestionnaire", color:"#12A150", builtin:true, perms:{seeMargins:true, manageCatalog:true, deleteSales:true, manageRoles:false, exportData:true}},
   vendeur: {name:"Vendeur", color:"#69748A", builtin:true, perms:{seeMargins:false, manageCatalog:false, deleteSales:false, manageRoles:false}}
 };
-var rawDb = null, userCap = null;
-var myId = null, myIsOwner = false, myCanEdit = false, myRoleId = "vendeur";
-var roleAssignments = {}, customRoles = {}, globalConfig = {companyName:"", defaultTva:20};
-var identityReady = false, identityListeners = [];
+var LS_PINS = "comptoir_pins_v1", LS_ROLES = "comptoir_roledefs_v1", LS_CFG = "comptoir_cfg_v1", LS_MSGS = "comptoir_msgs_v1";
+// Codes par défaut : changez-les dans Réglages > Codes PIN (le code 0703 reste Admin)
+var DEFAULT_PINS = [
+  {id:"u-admin", code:"0703", name:"Admin", emoji:"👑", roleId:"admin"},
+  {id:"u-gest", code:"2580", name:"Gestionnaire", emoji:"🧑‍💼", roleId:"gestionnaire"},
+  {id:"u-vend", code:"1379", name:"Vendeur", emoji:"🛍️", roleId:"vendeur"}
+];
+function lsGet(k, d){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function loadPins(){ var p = lsGet(LS_PINS, null); return (p && p.length) ? p : DEFAULT_PINS.slice(); }
+function savePins(p){ lsSet(LS_PINS, p); }
+var customRoles = lsGet(LS_ROLES, {}), globalConfig = Object.assign({companyName:"", defaultTva:20}, lsGet(LS_CFG, {}));
+var currentUser = null, myRoleId = "vendeur", identityListeners = [];
 function allRoles(){ return Object.assign({}, BUILTIN_ROLES, customRoles); }
-function myPerms(){ var r = allRoles()[myRoleId] || BUILTIN_ROLES.vendeur; return r.perms; }
+var PERM_DEFS = [
+  {g:"Applications", k:"useCaisse", l:"Accéder à la Caisse", d:"Ouvre l\u2019application Caisse", def:true},
+  {k:"useAgenda", l:"Calendrier, Notes, Photos, Tâches", d:"Accès aux applications de l\u2019agenda", def:true},
+  {k:"useMessages", l:"Utiliser les Messages", d:"Lire et envoyer des messages", def:true},
+  {k:"messageAll", l:"Écrire à Tous", d:"Envoyer un message à toute l\u2019équipe", def:true},
+  {g:"Ventes", k:"seeMargins", l:"Voir marges et CA", d:"Affiche les marges et le chiffre d\u2019affaires"},
+  {k:"manageCatalog", l:"Gérer le catalogue", d:"Créer et modifier les packs"},
+  {k:"deleteSales", l:"Supprimer des ventes", d:"Effacer des ventes de l\u2019historique"},
+  {k:"exportData", l:"Exporter / sauvegarder", d:"Export CSV, sauvegarde et import des données"},
+  {g:"Administration", k:"viewLog", l:"Voir le journal", d:"Connexions et actions d\u2019administration"},
+  {k:"manageRoles", l:"Administrateur", d:"Rôles, codes PIN et tous les réglages"}
+];
+function myPerms(){ var r = allRoles()[myRoleId] || BUILTIN_ROLES.vendeur, p = {};
+  PERM_DEFS.forEach(function(d){ p[d.k] = myRoleId === "admin" ? true : (r.perms[d.k] !== undefined ? !!r.perms[d.k] : !!d.def); }); return p; }
+function canSettings(){ var p = myPerms(); return p.manageRoles || p.exportData || p.viewLog; }
+function logEvent(t, who){ var l = lsGet("comptoir_log", []); l.push({ts:Date.now(), who: who || (currentUser ? currentUser.name : "—"), t:t}); lsSet("comptoir_log", l.slice(-100)); }
+function pinLocked(){ var r = Math.ceil((lsGet("comptoir_lock", 0) - Date.now())/1000); if(r > 0){ showToast("Trop d\u2019essais. Réessayez dans "+r+" s."); return true; } return false; }
+var pinFails = 0;
+function pinFail(){ logEvent("Code incorrect", "—"); pinFails++; var m = +globalConfig.maxTries || 0;
+  if(m && pinFails >= m){ pinFails = 0; lsSet("comptoir_lock", Date.now()+30000); logEvent("Accès bloqué 30 s", "—"); showToast("Trop d\u2019essais : bloqué 30 s."); } }
+var idleT = null;
+function bumpIdle(){ clearTimeout(idleT); var m = +globalConfig.autoLock || 0;
+  if(unlocked && m > 0) idleT = setTimeout(function(){ document.querySelectorAll(".overlay,.modal-overlay").forEach(function(x){ x.remove(); }); unlocked = false; renderHome(); }, m*60000); }
+["click","keydown","touchstart"].forEach(function(ev){ document.addEventListener(ev, bumpIdle, true); });
+function applyTheme(){ var t = globalConfig.theme; if(t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme"); }
+function backupData(){ var o = {}; try{ for(var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if(k.indexOf("comptoir_") === 0 && k !== "comptoir_lock") o[k] = localStorage.getItem(k); } }catch(e){} return JSON.stringify(o); }
+function wipeData(pref){ try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf(pref) === 0) localStorage.removeItem(k); }); }catch(e){} }
 function myRoleDef(){ return allRoles()[myRoleId] || BUILTIN_ROLES.vendeur; }
-function computeMyRole(){
-  if(myIsOwner){ myRoleId = "admin"; return; }
-  var a = roleAssignments[myId];
-  myRoleId = (a && a.roleId && allRoles()[a.roleId]) ? a.roleId : "vendeur";
-}
-function safeDb(p){ return p.catch(function(){ showToast("Modification refusée (droits insuffisants ?)"); }); }
+function computeMyRole(){ myRoleId = (currentUser && allRoles()[currentUser.roleId]) ? currentUser.roleId : "vendeur"; }
 function onIdentityChange(){ computeMyRole(); identityListeners.forEach(function(f){ f(); }); }
-async function bootIdentity(){
-  try{ if(window.claude && window.claude.use) rawDb = await window.claude.use("db"); }catch(e){}
-  try{
-    if(window.claude && window.claude.use){
-      userCap = await window.claude.use("user");
-      if(userCap){ myId = await userCap.id(); myIsOwner = await userCap.isOwner(); myCanEdit = await userCap.canEdit(); }
-    }
-  }catch(e){}
-  if(rawDb){
-    rawDb.collection("roles").onSnapshot(function(snap){
-      var m = {}; snap.docs.forEach(function(d){ m[d.id] = d.data()||{}; });
-      roleAssignments = m; onIdentityChange();
-    }, function(){});
-    rawDb.collection("roleDefs").onSnapshot(function(snap){
-      var m = {}; snap.docs.forEach(function(d){ m[d.id] = Object.assign({builtin:false}, d.data()||{}); });
-      customRoles = m; onIdentityChange();
-    }, function(){});
-    rawDb.doc("config/global").onSnapshot(function(snap){
-      if(snap.exists) globalConfig = Object.assign(globalConfig, snap.data());
-      onIdentityChange();
-    }, function(){});
-  }
-  identityReady = true;
-  onIdentityChange();
-}
-bootIdentity();
 
 // ---------- Settings & roles sheet ----------
 function slugify(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || ("role-"+Date.now().toString(36)); }
 function openSettingsSheet(){
+  var P = myPerms();
+  var TABS = [["gen","Général","manageRoles"],["sec","Sécurité","manageRoles"],["roles","Rôles","manageRoles"],["pins","Codes","manageRoles"],["data","Données","exportData"],["log","Journal","viewLog"]].filter(function(t){ return P[t[2]]; });
   var o = document.createElement("div"); o.className = "overlay";
-  o.innerHTML = '<div class="sheet"><h4>Réglages</h4>'+
-    '<div class="tabs2"><button type="button" class="on" data-tab="gen">Général</button><button type="button" data-tab="roles">Rôles</button><button type="button" data-tab="assign">Attribution</button></div>'+
-    '<div id="st-body"></div>'+
-    '<div class="sheet-actions"><button type="button" class="b-x2" id="st-x">Fermer</button></div></div>';
+  o.innerHTML = '<div class="sheet" style="max-width:480px"><h4>Réglages</h4><div class="tabs2">'+TABS.map(function(t,i){ return '<button type="button" data-tab="'+t[0]+'"'+(i?'':' class="on"')+'>'+t[1]+'</button>'; }).join("")+'</div>'+
+    '<div id="st-body"></div><div class="sheet-actions"><button type="button" class="b-x2" id="st-x">Fermer</button></div></div>';
   document.body.appendChild(o);
   function close(){ o.remove(); }
   o.addEventListener("click", function(e){ if(e.target === o) close(); });
   o.querySelector("#st-x").onclick = close;
   var body = o.querySelector("#st-body");
+  function saveCfg(patch){ globalConfig = Object.assign(globalConfig, patch); lsSet(LS_CFG, globalConfig); applyTheme(); showToast("Enregistré."); }
+  function opts(list, cur){ return list.map(function(x){ return '<option value="'+x[0]+'"'+(String(cur)===String(x[0])?' selected':'')+'>'+x[1]+'</option>'; }).join(""); }
+  function armDel(btn, label, fn){ if(!btn.classList.contains("arm")){ btn.classList.add("arm"); btn.textContent = "Confirmer ?"; setTimeout(function(){ btn.classList.remove("arm"); btn.textContent = label; }, 2500); return; } fn(); }
 
   function paintGen(){
-    body.innerHTML =
-      '<label>Nom de l\u2019entreprise</label><input id="cfg-name" value="'+escapeHtml(globalConfig.companyName)+'" placeholder="Nom affiché">'+
-      '<label>TVA par défaut (%)</label><input id="cfg-tva" type="number" step="0.5" value="'+(globalConfig.defaultTva||20)+'">'+
-      '<div class="hint" style="font-size:11px;color:var(--ink-soft);margin-top:10px">Admin principal : la personne propriétaire de cette page (identifié automatiquement, non modifiable ici).</div>'+
-      '<div class="sheet-actions"><button type="button" class="b-save2" id="cfg-save">Enregistrer</button></div>';
-    body.querySelector("#cfg-save").onclick = function(){
-      var obj = {companyName: body.querySelector("#cfg-name").value.trim(), defaultTva: parseFloat(body.querySelector("#cfg-tva").value)||20};
-      if(rawDb) safeDb(rawDb.doc("config/global").set(obj)).then(function(r){ if(r!==false) showToast("Réglages enregistrés."); });
-    };
+    body.innerHTML = '<label>Nom de l\u2019entreprise</label><input id="g-name" value="'+escapeHtml(globalConfig.companyName)+'" placeholder="Affiché sur l\u2019accueil">'+
+      '<label>TVA par défaut (%)</label><input id="g-tva" type="number" step="0.5" value="'+(globalConfig.defaultTva||20)+'">'+
+      '<label>Thème</label><select id="g-theme" style="width:100%">'+opts([["auto","Automatique"],["light","Clair"],["dark","Sombre"]], globalConfig.theme||"auto")+'</select>'+
+      '<div class="sheet-actions"><button type="button" class="b-save2" id="g-save">Enregistrer</button></div>';
+    body.querySelector("#g-save").onclick = function(){ saveCfg({companyName: body.querySelector("#g-name").value.trim(), defaultTva: parseFloat(body.querySelector("#g-tva").value)||20, theme: body.querySelector("#g-theme").value}); logEvent("Réglages généraux modifiés"); };
+  }
+  function paintSec(){
+    body.innerHTML = '<label>Verrouillage automatique (inactivité)</label><select id="s-lock" style="width:100%">'+opts([[0,"Jamais"],[1,"1 minute"],[5,"5 minutes"],[15,"15 minutes"]], globalConfig.autoLock||0)+'</select>'+
+      '<label>Essais de code avant blocage (30 s)</label><select id="s-max" style="width:100%">'+opts([[0,"Illimité"],[3,"3 essais"],[5,"5 essais"]], globalConfig.maxTries||0)+'</select>'+
+      '<div class="sheet-actions"><button type="button" class="b-save2" id="s-save">Enregistrer</button></div>';
+    body.querySelector("#s-save").onclick = function(){ saveCfg({autoLock:+body.querySelector("#s-lock").value, maxTries:+body.querySelector("#s-max").value}); logEvent("Sécurité modifiée"); bumpIdle(); };
   }
 
+  function switches(perms){
+    var g = "", h = "";
+    PERM_DEFS.forEach(function(d){
+      if(d.g && d.g !== g){ g = d.g; h += '<div class="perm-group">'+d.g+'</div>'; }
+      var on = perms[d.k] !== undefined ? perms[d.k] : d.def;
+      h += '<label class="sw-row"><span><b>'+d.l+'</b><small>'+d.d+'</small></span><input type="checkbox" class="sw" data-perm="'+d.k+'"'+(on?' checked':'')+'></label>';
+    });
+    return h;
+  }
+  function roleForm(id){
+    var ex = id ? customRoles[id] : null, COLS = ["#5856D6","#FF3B30","#FF9500","#12A150","#AF52DE","#3457D5","#FF2D55","#00A5B5"], col = ex ? ex.color : COLS[0];
+    body.innerHTML = '<label>Nom du rôle</label><input id="rf-name" value="'+escapeHtml(ex?ex.name:"")+'" placeholder="Ex : Caissier, Stagiaire…"><label>Couleur</label>'+
+      '<div class="colors2" id="rf-cols">'+COLS.map(function(c){ return '<button type="button" data-c="'+c+'" style="background:'+c+'" class="'+(c===col?"on":"")+'"></button>'; }).join("")+'</div>'+
+      switches(ex ? ex.perms : {})+
+      '<div class="sheet-actions"><button type="button" class="b-x2" id="rf-x">Annuler</button><button type="button" class="b-save2" id="rf-s">Enregistrer</button></div>';
+    body.querySelectorAll("#rf-cols button").forEach(function(b){ b.onclick = function(){ col = b.dataset.c; body.querySelectorAll("#rf-cols button").forEach(function(x){ x.classList.toggle("on", x===b); }); }; });
+    body.querySelector("#rf-x").onclick = paintRoles;
+    body.querySelector("#rf-s").onclick = function(){
+      var name = body.querySelector("#rf-name").value.trim(); if(!name){ body.querySelector("#rf-name").focus(); return; }
+      var rid = id || slugify(name); if(!id && allRoles()[rid]){ showToast("Ce nom est déjà pris."); return; }
+      var perms = {}; body.querySelectorAll("[data-perm]").forEach(function(c){ perms[c.dataset.perm] = c.checked; });
+      customRoles[rid] = {name:name, color:col, perms:perms}; lsSet(LS_ROLES, customRoles);
+      if(currentUser){ computeMyRole(); } logEvent((id?"Rôle modifié : ":"Rôle créé : ")+name); showToast("Rôle enregistré."); paintRoles();
+    };
+  }
   function paintRoles(){
-    var html = '<div id="rd-list"></div><label style="margin-top:16px">Nouveau rôle</label>'+
-      '<input id="rd-name" placeholder="Nom du rôle">'+
-      '<div class="perm-check"><input type="checkbox" id="rd-p1"><label for="rd-p1" style="margin:0">Voir marges / CA</label></div>'+
-      '<div class="perm-check"><input type="checkbox" id="rd-p2"><label for="rd-p2" style="margin:0">Gérer le catalogue</label></div>'+
-      '<div class="perm-check"><input type="checkbox" id="rd-p3"><label for="rd-p3" style="margin:0">Supprimer des ventes</label></div>'+
-      '<div class="perm-check"><input type="checkbox" id="rd-p4"><label for="rd-p4" style="margin:0">Gérer les rôles</label></div>'+
-      '<div class="sheet-actions"><button type="button" class="b-save2" id="rd-add">Créer le rôle</button></div>';
-    body.innerHTML = html;
-    var list = body.querySelector("#rd-list");
     var all = allRoles();
-    list.innerHTML = Object.keys(all).map(function(id){
-      var r = all[id];
+    body.innerHTML = '<div id="rd-list"></div><div class="sheet-actions"><button type="button" class="b-save2" id="rd-new">＋ Nouveau rôle</button></div>';
+    var perms = function(r){ return PERM_DEFS.filter(function(d){ return r.builtin && r.name==="Admin" ? true : (r.perms[d.k] !== undefined ? r.perms[d.k] : d.def); }).map(function(d){ return d.l; }).join(" · "); };
+    body.querySelector("#rd-list").innerHTML = Object.keys(all).map(function(id){ var r = all[id];
       return '<div class="role-def-row"><div class="rn"><span style="width:10px;height:10px;border-radius:50%;background:'+r.color+';display:inline-block"></span>'+escapeHtml(r.name)+(r.builtin?' <span style="color:var(--ink-soft);font-weight:400">(intégré)</span>':'')+'</div>'+
-        '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px">'+[r.perms.seeMargins&&"Marges",r.perms.manageCatalog&&"Catalogue",r.perms.deleteSales&&"Suppression",r.perms.manageRoles&&"Rôles"].filter(Boolean).join(" · ")+'</div>'+
-        (r.builtin?'':'<button type="button" class="danger-ghost" data-del="'+id+'" style="margin-top:8px">Supprimer ce rôle</button>')+
-        '</div>';
-    }).join("");
-    list.querySelectorAll("[data-del]").forEach(function(btn){
-      btn.onclick = function(){
-        if(!btn.classList.contains("arm")){ btn.classList.add("arm"); btn.textContent="Confirmer ?"; setTimeout(function(){ btn.classList.remove("arm"); btn.textContent="Supprimer ce rôle"; },2500); return; }
-        if(rawDb) safeDb(rawDb.doc("roleDefs/"+btn.dataset.del).delete()).then(function(r){ if(r!==false){ showToast("Rôle supprimé."); paintRoles(); } });
-      };
-    });
-    body.querySelector("#rd-add").onclick = function(){
-      var name = body.querySelector("#rd-name").value.trim();
-      if(!name){ body.querySelector("#rd-name").focus(); return; }
-      var id = slugify(name);
-      var obj = {name:name, color:"#5856D6", perms:{
-        seeMargins: body.querySelector("#rd-p1").checked,
-        manageCatalog: body.querySelector("#rd-p2").checked,
-        deleteSales: body.querySelector("#rd-p3").checked,
-        manageRoles: body.querySelector("#rd-p4").checked
-      }};
-      if(rawDb) safeDb(rawDb.doc("roleDefs/"+id).set(obj)).then(function(r){ if(r!==false){ showToast("Rôle créé."); paintRoles(); } });
+        '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px">'+escapeHtml(perms(r))+'</div>'+
+        (r.builtin?'':'<div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="danger-ghost" style="color:var(--blue)" data-edit="'+id+'">Modifier</button><button type="button" class="danger-ghost" data-del="'+id+'">Supprimer</button></div>')+'</div>'; }).join("");
+    body.querySelector("#rd-new").onclick = function(){ roleForm(null); };
+    body.querySelectorAll("[data-edit]").forEach(function(b){ b.onclick = function(){ roleForm(b.dataset.edit); }; });
+    body.querySelectorAll("[data-del]").forEach(function(b){ b.onclick = function(){ armDel(b, "Supprimer", function(){
+      if(loadPins().some(function(x){ return x.roleId === b.dataset.del; })){ showToast("Ce rôle est encore utilisé par un code."); return; }
+      logEvent("Rôle supprimé : "+customRoles[b.dataset.del].name); delete customRoles[b.dataset.del]; lsSet(LS_ROLES, customRoles); paintRoles(); }); }; });
+  }
+
+  function adminCount(pins){ return pins.filter(function(p){ var r = allRoles()[p.roleId]; return r && (p.roleId === "admin" || r.perms.manageRoles); }).length; }
+  function paintPins(){
+    var pins = loadPins(), roles = allRoles();
+    var ro = function(sel){ return Object.keys(roles).map(function(id){ return '<option value="'+id+'"'+(id===sel?' selected':'')+'>'+escapeHtml(roles[id].name)+'</option>'; }).join(""); };
+    body.innerHTML = '<div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px">Chaque code ouvre l\u2019application avec les permissions de son rôle (onglet Rôles).</div>'+
+      pins.map(function(p){ return '<div class="assign-row"><span>'+escapeHtml(p.emoji||"🙂")+'</span><span class="nm">'+escapeHtml(p.name)+' <span style="color:var(--ink-soft)">· '+escapeHtml(p.code)+'</span></span><select class="role-select" data-role="'+p.id+'">'+ro(p.roleId)+'</select><button type="button" class="danger-ghost" data-del="'+p.id+'">✕</button></div>'; }).join("")+
+      '<label style="margin-top:16px">Nouveau code</label><input id="pn-name" placeholder="Nom de la personne"><input id="pn-code" inputmode="numeric" maxlength="4" placeholder="Code à 4 chiffres" style="margin-top:8px">'+
+      '<select id="pn-role" class="role-select" style="margin-top:8px;width:100%">'+ro("vendeur")+'</select><div class="sheet-actions"><button type="button" class="b-save2" id="pn-add">Ajouter</button></div>';
+    body.querySelectorAll("[data-role]").forEach(function(sel){ sel.onchange = function(){
+      var l = loadPins(), p = l.filter(function(x){ return x.id === sel.dataset.role; })[0], old = p.roleId; p.roleId = sel.value;
+      if(!adminCount(l)){ showToast("Il faut au moins un administrateur."); sel.value = old; return; }
+      savePins(l); if(currentUser && currentUser.id === p.id) currentUser.roleId = p.roleId; logEvent("Rôle de "+p.name+" modifié"); showToast("Rôle modifié."); }; });
+    body.querySelectorAll("[data-del]").forEach(function(b){ b.onclick = function(){
+      var l = loadPins().filter(function(x){ return x.id !== b.dataset.del; });
+      if(currentUser && currentUser.id === b.dataset.del){ showToast("Vous ne pouvez pas supprimer votre propre code."); return; }
+      if(!adminCount(l)){ showToast("Il faut au moins un administrateur."); return; }
+      savePins(l); logEvent("Code supprimé"); paintPins(); }; });
+    body.querySelector("#pn-add").onclick = function(){
+      var name = body.querySelector("#pn-name").value.trim(), code = body.querySelector("#pn-code").value.trim();
+      if(!name){ body.querySelector("#pn-name").focus(); return; }
+      if(!/^\d{4}$/.test(code)){ showToast("Le code doit faire 4 chiffres."); return; }
+      var l = loadPins(); if(l.some(function(x){ return x.code === code; })){ showToast("Ce code existe déjà."); return; }
+      l.push({id:"u-"+Date.now().toString(36), code:code, name:name, emoji:PROFILE_EMOJIS[l.length % PROFILE_EMOJIS.length], roleId:body.querySelector("#pn-role").value});
+      savePins(l); logEvent("Code créé : "+name); showToast("Code ajouté."); paintPins();
     };
   }
 
-  function paintAssign(){
-    body.innerHTML = '<label>Rechercher une personne</label><input id="as-search" placeholder="Nom…">'+
-      '<div id="as-results"></div>'+
-      '<label style="margin-top:16px">Attributions actuelles</label><div id="as-current" class="hint">Chargement…</div>';
-    var results = body.querySelector("#as-results");
-    var searchInput = body.querySelector("#as-search");
-    function renderPicker(hit){
-      var roleOpts = Object.keys(allRoles()).map(function(id){ return '<option value="'+id+'">'+escapeHtml(allRoles()[id].name)+'</option>'; }).join("");
-      var row = document.createElement("div"); row.className = "assign-row";
-      row.innerHTML = '<img src="'+hit.avatarUrl+'" alt=""><span class="nm">'+escapeHtml(hit.name||"Sans nom")+'</span><select class="role-select">'+roleOpts+'</select><button type="button" class="pack-save" style="width:auto;margin:0;padding:6px 12px">OK</button>';
-      var sel = row.querySelector("select"); sel.value = (roleAssignments[hit.id]&&roleAssignments[hit.id].roleId) || "vendeur";
-      row.querySelector("button").onclick = function(){
-        if(rawDb) safeDb(rawDb.doc("roles/"+hit.id).set({roleId: sel.value, updatedAt: Date.now()})).then(function(r){ if(r!==false){ showToast("Rôle attribué."); paintAssign(); } });
-      };
-      results.innerHTML = ""; results.appendChild(row);
-    }
-    searchInput.addEventListener("input", async function(){
-      var q = searchInput.value.trim();
-      if(!userCap){ results.innerHTML = ''; return; }
-      var hits = await userCap.search(q);
-      results.innerHTML = hits.length ? "" : '<div class="hint">Aucun résultat.</div>';
-      if(hits.length){
-        var wrap = document.createElement("div");
-        hits.forEach(function(h){
-          var d = document.createElement("div"); d.className = "search-hit";
-          d.innerHTML = '<img src="'+h.avatarUrl+'" alt=""><span class="nm"></span>';
-          d.querySelector(".nm").textContent = h.name || "Sans nom";
-          d.onclick = function(){ renderPicker(h); };
-          wrap.appendChild(d);
-        });
-        results.innerHTML = ""; results.appendChild(wrap);
-      }
-    });
-    var ids = Object.keys(roleAssignments);
-    var cur = body.querySelector("#as-current");
-    if(!ids.length){ cur.textContent = "Aucune attribution personnalisée pour l\u2019instant."; }
-    else if(userCap){
-      userCap.profiles(ids).then(function(ps){
-        cur.innerHTML = ids.map(function(id){
-          var roleId = roleAssignments[id].roleId, r = allRoles()[roleId] || BUILTIN_ROLES.vendeur;
-          return '<div class="assign-row"><span class="nm">'+escapeHtml((ps[id]&&ps[id].name)||"Quelqu\u2019un")+'</span><span class="role-pill" style="background:'+r.color+'">'+escapeHtml(r.name)+'</span></div>';
-        }).join("");
-      });
+  function paintData(){
+    body.innerHTML = '<div class="hint" style="font-size:11.5px;color:var(--ink-soft);margin-bottom:10px">Les données sont enregistrées dans ce navigateur : sauvegardez-les régulièrement.</div>'+
+      '<button type="button" class="b-save2" id="d-exp" style="width:100%;border:none;border-radius:8px;padding:12px;font-weight:600;cursor:pointer">⬇ Exporter une sauvegarde complète</button>'+
+      '<label style="margin-top:14px">Importer une sauvegarde</label><input id="d-file" type="file" accept=".json,application/json">'+
+      (P.manageRoles ? '<div class="perm-group" style="margin-top:20px">Zone dangereuse</div><div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="danger-ghost" id="d-msg">Vider les messages</button><button type="button" class="danger-ghost" id="d-all">Tout réinitialiser</button></div>' : '');
+    body.querySelector("#d-exp").onclick = function(){ offerDownload("sauvegarde-comptoir-"+new Date().toISOString().slice(0,10)+".json", backupData()); logEvent("Sauvegarde exportée"); };
+    body.querySelector("#d-file").onchange = function(e){ var f = e.target.files[0]; if(!f) return; var fr = new FileReader();
+      fr.onload = function(){ try{ var d = JSON.parse(fr.result), n = 0; Object.keys(d).forEach(function(k){ if(k.indexOf("comptoir_") === 0){ localStorage.setItem(k, d[k]); n++; } });
+        if(!n) throw 0; showToast("Sauvegarde importée."); setTimeout(function(){ location.reload(); }, 800); }catch(x){ showToast("Fichier invalide."); } };
+      fr.readAsText(f); };
+    if(P.manageRoles){
+      body.querySelector("#d-msg").onclick = function(){ var b = this; armDel(b, "Vider les messages", function(){ lsSet(LS_MSGS, []); logEvent("Messages vidés"); showToast("Messages supprimés."); b.textContent = "Vider les messages"; }); };
+      body.querySelector("#d-all").onclick = function(){ armDel(this, "Tout réinitialiser", function(){ wipeData("comptoir_"); location.reload(); }); };
     }
   }
+  function paintLog(){
+    var l = lsGet("comptoir_log", []).slice().reverse();
+    body.innerHTML = (l.length ? l.slice(0,60).map(function(e){ return '<div class="assign-row"><span class="nm"><b>'+escapeHtml(e.who)+'</b> · '+escapeHtml(e.t)+'</span><span style="font-size:11px;color:var(--ink-soft)">'+dateStr(new Date(e.ts))+'</span></div>'; }).join("") : '<div class="hint">Aucune activité.</div>')+
+      (P.manageRoles && l.length ? '<div class="sheet-actions"><button type="button" class="b-x2" id="l-clr">Vider le journal</button></div>' : '');
+    var c = body.querySelector("#l-clr"); if(c) c.onclick = function(){ lsSet("comptoir_log", []); paintLog(); };
+  }
 
-  o.querySelectorAll(".tabs2 button").forEach(function(b){
-    b.onclick = function(){
-      o.querySelectorAll(".tabs2 button").forEach(function(x){ x.classList.toggle("on", x===b); });
-      if(b.dataset.tab==="gen") paintGen(); else if(b.dataset.tab==="roles") paintRoles(); else paintAssign();
-    };
-  });
-  paintGen();
+  var paint = {gen:paintGen, sec:paintSec, roles:paintRoles, pins:paintPins, data:paintData, log:paintLog};
+  o.querySelectorAll(".tabs2 button").forEach(function(b){ b.onclick = function(){ o.querySelectorAll(".tabs2 button").forEach(function(x){ x.classList.toggle("on", x === b); }); paint[b.dataset.tab](); }; });
+  paint[TABS[0][0]]();
 }
 
 // ---------- PIN + main menu ----------
@@ -538,7 +594,7 @@ var AGENDA_URL = "https://claude.ai/artifact/SrWhDZJ9VTqx1tssFKDD2j";
 var unlocked = false;
 
 function askPin(){
-  var app = document.getElementById("app"), buf = "";
+  var app = document.getElementById("app"), buf = ""; currentUser = null; computeMyRole();
   app.innerHTML = '<div class="pin-wrap"><div class="pin-title">Entrez le code</div><div class="pin-dots" id="pd"></div><div class="pin-pad" id="pp"></div></div>';
   var pp = document.getElementById("pp");
   ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(function(k){
@@ -547,12 +603,13 @@ function askPin(){
     b.onclick = function(){ press(k); }; pp.appendChild(b);
   });
   function draw(){ document.getElementById("pd").innerHTML = [0,1,2,3].map(function(i){ return '<span class="'+(i<buf.length?"on":"")+'"></span>'; }).join(""); }
-  function press(k){
+  function press(k){ if(pinLocked()) return;
     if(k === "⌫") buf = buf.slice(0,-1); else if(k && buf.length < 4) buf += k;
     draw();
     if(buf.length === 4){
-      if(buf === PIN){ document.onkeydown = null; unlocked = true; renderHome(); }
-      else { var d = document.getElementById("pd"); d.classList.add("shake"); setTimeout(function(){ buf = ""; draw(); d.classList.remove("shake"); }, 450); }
+      var hit = loadPins().filter(function(p){ return p.code === buf; })[0];
+      if(hit){ document.onkeydown = null; currentUser = hit; computeMyRole(); unlocked = true; pinFails = 0; logEvent("Connexion", hit.name); bumpIdle(); renderHome(); }
+      else { pinFail(); var d = document.getElementById("pd"); d.classList.add("shake"); setTimeout(function(){ buf = ""; draw(); d.classList.remove("shake"); }, 450); }
     }
   }
   document.onkeydown = function(e){ if(/^[0-9]$/.test(e.key)) press(e.key); else if(e.key === "Backspace") press("⌫"); };
@@ -568,18 +625,123 @@ function renderHome(){
       '<button type="button" class="profile-btn" id="home-profile" style="position:absolute; top:calc(18px + env(safe-area-inset-top,0px)); right:18px">'+profileBtnHtml()+'</button>'+
       '<div class="home-grid">'+
         '<button type="button" class="home-tile" id="home-caisse"><span class="home-square">🧾</span><span class="lbl">Caisse</span></button>'+
+        '<button type="button" class="home-tile" id="home-msg"><span class="home-square alt5">💬'+(unreadCount(currentUser.id)?'<span class="home-badge">'+unreadCount(currentUser.id)+'</span>':'')+'</span><span class="lbl">Messages</span></button>'+
+        '<button type="button" class="home-tile" id="home-set"><span class="home-square alt6">⚙️</span><span class="lbl">Réglages</span></button>'+
         '<a class="home-tile" href="'+AGENDA_URL+'#cal" target="_blank" rel="noopener"><span class="home-square alt">📅</span><span class="lbl">Calendrier</span></a>'+
         '<a class="home-tile" href="'+AGENDA_URL+'#notes" target="_blank" rel="noopener"><span class="home-square alt2">🗒️</span><span class="lbl">Notes</span></a>'+
         '<a class="home-tile" href="'+AGENDA_URL+'#photos" target="_blank" rel="noopener"><span class="home-square alt3">📷</span><span class="lbl">Photos</span></a>'+
         '<a class="home-tile" href="'+AGENDA_URL+'#taches" target="_blank" rel="noopener"><span class="home-square alt4">✅</span><span class="lbl">Tâches</span></a>'+
       '</div>'+
-      '<div><div class="home-title">Comptoir</div><div class="home-sub">Choisissez une application</div></div>'+
+      '<div><div class="home-title">'+escapeHtml(globalConfig.companyName||"Comptoir")+'</div><div class="home-sub">Bonjour '+escapeHtml(currentUser.name)+' · '+escapeHtml(myRoleDef().name)+'</div></div>'+
       '<button type="button" class="icon-btn" id="home-lock" style="background:transparent;color:#8D97AA;border-color:#28303F">🔒 Verrouiller</button>'+
     '</div>';
   document.getElementById("home-caisse").addEventListener("click", renderApp);
+  document.getElementById("home-msg").addEventListener("click", function(){ renderMessages(null); });
+  document.getElementById("home-set").addEventListener("click", openSettingsSheet);
+  var HP = myPerms(), hide = function(el, ok){ if(el && !ok) el.style.display = "none"; };
+  hide(document.getElementById("home-caisse"), HP.useCaisse); hide(document.getElementById("home-msg"), HP.useMessages); hide(document.getElementById("home-set"), canSettings());
+  document.querySelectorAll("a.home-tile").forEach(function(a){ hide(a, HP.useAgenda); });
   document.getElementById("home-profile").addEventListener("click", function(){ openProfileSheet(renderHome); });
   document.getElementById("home-lock").addEventListener("click", function(){ unlocked = false; renderHome(); });
 }
+
+// ---------- Messages (style Apple) ----------
+function loadMsgs(){ return lsGet(LS_MSGS, []); }
+function saveMsgs(l){ lsSet(LS_MSGS, l.slice(-500)); }
+function isForMe(m, uid){ return m.from !== uid && (m.to === uid || m.to === "all"); }
+function unreadCount(uid){ return loadMsgs().filter(function(m){ return isForMe(m, uid) && (m.r||[]).indexOf(uid) < 0; }).length; }
+function convMsgs(uid, peer){
+  return loadMsgs().filter(function(m){ return peer === "all" ? m.to === "all" : ((m.from===uid && m.to===peer) || (m.from===peer && m.to===uid)); });
+}
+function markRead(uid, peer){
+  var l = loadMsgs(), ch = false;
+  l.forEach(function(m){
+    if(isForMe(m, uid) && (m.r||[]).indexOf(uid) < 0 && (peer === "all" ? m.to === "all" : m.from === peer)){ (m.r = m.r||[]).push(uid); ch = true; }
+  });
+  if(ch) saveMsgs(l);
+}
+function userById(id){
+  if(id === "all") return {id:"all", name:"Tous", emoji:"📣", roleId:null};
+  return loadPins().filter(function(p){ return p.id === id; })[0] || {id:id, name:"Ancien contact", emoji:"👤", roleId:null};
+}
+function msgTime(ts){
+  var d = new Date(ts), n = new Date();
+  if(d.toDateString() === n.toDateString()) return pad(d.getHours())+":"+pad(d.getMinutes());
+  if(d.toDateString() === new Date(n - 864e5).toDateString()) return "Hier";
+  return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+String(d.getFullYear()).slice(2);
+}
+function avatarHtml(u, size){
+  var r = u.roleId && allRoles()[u.roleId], col = r ? r.color : "#8E8E93";
+  return '<span class="m-av" style="width:'+size+'px;height:'+size+'px;font-size:'+Math.round(size*.5)+'px;background:'+col+'">'+escapeHtml(u.emoji||"🙂")+'</span>';
+}
+var msgPeer = null;
+function renderMessages(peer){
+  msgPeer = peer || null;
+  var app = document.getElementById("app");
+  if(msgPeer) renderThread(app); else renderConvList(app);
+}
+function renderConvList(app){
+  var me = currentUser;
+  var rows = (myPerms().messageAll ? ["all"] : []).concat(loadPins().filter(function(p){ return p.id !== me.id; }).map(function(p){ return p.id; })).map(function(id){
+    var l = convMsgs(me.id, id);
+    return {id:id, last:l[l.length-1], unread:l.filter(function(m){ return isForMe(m, me.id) && (m.r||[]).indexOf(me.id) < 0; }).length};
+  });
+  rows.sort(function(a,b){ return (b.last?b.last.ts:0) - (a.last?a.last.ts:0); });
+  app.innerHTML = '<div class="msg-wrap"><div class="msg-top"><button type="button" class="msg-back" id="m-home">‹ Accueil</button></div>'+
+    '<div class="msg-large">Messages</div><div class="msg-list">'+rows.map(function(r){
+      var u = userById(r.id), pre = "Aucun message";
+      if(r.last){ pre = (r.last.from === me.id ? "Vous : " : (r.id==="all" ? userById(r.last.from).name+" : " : "")) + r.last.text; }
+      return '<div class="m-conv" data-id="'+r.id+'"><span class="m-dot'+(r.unread?' on':'')+'"></span>'+avatarHtml(u,46)+
+        '<div class="m-mid"><div class="m-name">'+escapeHtml(u.name)+'</div><div class="m-pre">'+escapeHtml(pre)+'</div></div>'+
+        '<div class="m-time">'+(r.last?msgTime(r.last.ts):'')+'</div></div>';
+    }).join("")+'</div></div>';
+  app.querySelector("#m-home").onclick = renderHome;
+  app.querySelectorAll(".m-conv").forEach(function(c){ c.onclick = function(){ renderMessages(c.dataset.id); }; });
+}
+function paintThreadBody(){
+  var sc = document.getElementById("m-scroll"); if(!sc) return;
+  var me = currentUser, isAll = msgPeer === "all";
+  markRead(me.id, msgPeer);
+  var l = convMsgs(me.id, msgPeer), lastMine = -1, prev = 0, html = "";
+  l.forEach(function(m, i){ if(m.from === me.id) lastMine = i; });
+  l.forEach(function(m, i){
+    var mine = m.from === me.id;
+    if(m.ts - prev > 3600000) html += '<div class="m-stamp">'+dateStr(new Date(m.ts))+'</div>';
+    prev = m.ts;
+    if(isAll && !mine) html += '<div class="m-from">'+escapeHtml(userById(m.from).name)+'</div>';
+    html += '<div class="m-row '+(mine?'me':'them')+'"><div class="m-bub">'+escapeHtml(m.text).replace(/\n/g,"<br>")+'</div></div>';
+    if(mine && i === lastMine && !isAll) html += '<div class="m-status">'+((m.r||[]).indexOf(msgPeer) >= 0 ? "Lu" : "Distribué")+'</div>';
+  });
+  if(!l.length) html = '<div class="m-empty">Aucun message. Écrivez le premier !</div>';
+  sc.innerHTML = html; sc.scrollTop = sc.scrollHeight;
+}
+function renderThread(app){
+  var me = currentUser, peer = userById(msgPeer);
+  var role = peer.roleId && allRoles()[peer.roleId];
+  app.innerHTML = '<div class="msg-wrap"><div class="msg-top thread"><button type="button" class="msg-back" id="m-back">‹</button>'+
+    '<div class="m-head">'+avatarHtml(peer,36)+'<div class="m-hname">'+escapeHtml(peer.name)+(role?' <span>'+escapeHtml(role.name)+'</span>':'')+'</div></div><span style="width:40px"></span></div>'+
+    '<div id="m-scroll" class="m-scroll"></div>'+
+    '<div class="m-compose"><textarea id="m-input" rows="1" placeholder="iMessage"></textarea><button type="button" id="m-send" disabled>↑</button></div></div>';
+  var inp = app.querySelector("#m-input"), btn = app.querySelector("#m-send");
+  function sync(){ inp.style.height = "auto"; inp.style.height = Math.min(inp.scrollHeight, 110)+"px"; btn.disabled = !inp.value.trim(); }
+  function send(){
+    var t = inp.value.trim(); if(!t) return;
+    var l = loadMsgs(); l.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), from:me.id, to:msgPeer, text:t, ts:Date.now(), r:[]});
+    saveMsgs(l); inp.value = ""; sync(); paintThreadBody(); inp.focus();
+  }
+  inp.addEventListener("input", sync);
+  inp.addEventListener("keydown", function(e){ if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); } });
+  btn.onclick = send;
+  app.querySelector("#m-back").onclick = function(){ renderMessages(null); };
+  paintThreadBody();
+}
+window.addEventListener("storage", function(e){
+  if(e.key !== LS_MSGS || !unlocked || !currentUser) return;
+  var app = document.getElementById("app");
+  if(app.querySelector("#m-scroll")) paintThreadBody();
+  else if(app.querySelector(".msg-list")) renderConvList(app);
+  else if(app.querySelector(".home-wrap")) renderHome();
+});
 
 // ---------- Standalone receipt view (from QR link) ----------
 function renderTicketView(data){
@@ -659,7 +821,7 @@ function renderApp(){
       '<header class="top"><div><h1>Comptoir</h1><p>Gérez vos packs, enregistrez une vente, partagez le ticket.</p></div>'+
       '<div class="top-controls">'+
         '<span class="role-pill" style="background:'+myRoleDef().color+'">'+escapeHtml(myRoleDef().name)+'</span>'+
-        (myPerms().manageRoles ? '<button type="button" class="icon-btn" id="btn-settings">⚙ Réglages</button>' : '')+
+        (canSettings() ? '<button type="button" class="icon-btn" id="btn-settings">⚙ Réglages</button>' : '')+
         '<button type="button" class="profile-btn" id="btn-profile">'+profileBtnHtml()+'</button>'+
         '<button type="button" class="icon-btn" id="btn-menu">☰ Menu</button>'+
         '<button type="button" class="icon-btn" id="btn-lock" title="Verrouiller">🔒 Verrouiller</button>'+
@@ -997,6 +1159,7 @@ function renderApp(){
     refreshHistory();
   });
   document.getElementById("btn-export").addEventListener("click", function(){
+    if(!myPerms().exportData){ showToast("Permission requise."); return; }
     var list = loadHistory();
     if(!list.length){ showToast("Aucune vente à exporter."); return; }
     var headers = ["Numero","Date","Client","ID Client","Vendeur","Produit","Vente HT","Cout","Remise","TVA %","Total HT","TVA","Total TTC","Marge","Note"];
@@ -1069,7 +1232,7 @@ function renderApp(){
 }
 
 // ---------- Boot ----------
-applyProfileTheme();
+applyProfileTheme(); applyTheme();
 var hash = location.hash || "";
 if(hash.indexOf("#r=") === 0){
   try{
