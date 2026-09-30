@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Comptoir — Tickets de caisse</title>
+<title>VIPure site</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -33,6 +33,42 @@ header.top p{margin:4px 0 0; color:var(--ink-soft); font-size:13.5px;}
 .icon-btn{background:var(--panel); border:1px solid var(--line); color:var(--ink-soft); border-radius:8px; padding:9px 13px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;}
 .icon-btn:hover{border-color:var(--blue); color:var(--blue);}
 .icon-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+.profile-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.role-pill{font-size:10.5px; font-weight:700; letter-spacing:.3px; padding:5px 10px; border-radius:20px; color:#fff; display:flex; align-items:center; height:38px;}
+.locked-note{font-size:11.5px; color:var(--ink-soft); padding:10px 2px;}
+.search-hit{display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); cursor:pointer;}
+.search-hit:last-child{border-bottom:none;}
+.search-hit img{width:28px;height:28px;border-radius:50%;object-fit:cover;}
+.search-hit .nm{flex:1; font-size:13.5px;}
+.role-select{width:auto; padding:6px 8px; font-size:12.5px;}
+.assign-row{display:flex; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid var(--line);}
+.assign-row:last-child{border-bottom:none;}
+.assign-row .nm{flex:1; font-size:13px;}
+.role-def-row{border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:10px;}
+.role-def-row .rn{font-weight:700; font-size:13.5px; display:flex; align-items:center; gap:8px;}
+.perm-check{display:flex; align-items:center; gap:8px; font-size:12.5px; margin-top:6px; color:var(--ink);}
+.tabs2{display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid var(--line);}
+.tabs2 button{background:none; border:none; padding:9px 4px; font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;}
+.tabs2 button.on{color:var(--blue); border-color:var(--blue);}
+.profile-btn img{width:100%;height:100%;object-fit:cover}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:0}
+@media (min-width:600px){.overlay{align-items:center;padding:20px}}
+.sheet{background:var(--panel);width:100%;max-width:420px;border-radius:18px 18px 0 0;padding:20px;max-height:92vh;overflow:auto}
+@media (min-width:600px){.sheet{border-radius:14px}}
+.sheet h4{margin:0 0 14px;font-size:16px}
+.avatar-preview{width:56px;height:56px;border-radius:14px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;margin-bottom:6px}
+.avatar-preview img{width:100%;height:100%;object-fit:cover}
+.emojis{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+.emojis button{width:36px;height:36px;border-radius:9px;border:2px solid var(--line);background:var(--bg);font-size:18px;cursor:pointer}
+.emojis button.on{border-color:var(--blue)}
+.colors2{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
+.colors2 button{width:26px;height:26px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+.colors2 button.on{border-color:var(--ink)}
+.sheet-actions{display:flex;gap:8px;margin-top:18px}
+.sheet-actions button{flex:1;border:none;border-radius:8px;padding:12px;font-size:14.5px;font-weight:600;cursor:pointer}
+.b-save2{background:var(--blue);color:#fff}
+.b-x2{background:var(--bg);color:var(--ink-soft)}
+
 
 .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px;}
 @media (max-width:700px){.stats{grid-template-columns:repeat(2,1fr);}}
@@ -151,7 +187,7 @@ body.is-discreet .sensitive{filter:blur(7px); user-select:none;}
 .view-wrap{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg); padding:40px 16px; gap:16px;}
 .view-back{position:fixed; top:calc(18px + env(safe-area-inset-top,0px)); left:18px; font-size:13px; color:var(--ink-soft); text-decoration:none; border:1px solid var(--line); padding:7px 13px; border-radius:20px; background:var(--panel);}
 
-.home-wrap{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--navy2); color:#EDEFF4; gap:22px; text-align:center; padding:24px;}
+.home-wrap{position:relative; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--navy2); color:#EDEFF4; gap:22px; text-align:center; padding:24px;}
 .home-square{width:180px; height:180px; border-radius:28px; background:linear-gradient(155deg, var(--blue) 0%, var(--blue-dk) 100%); display:flex; align-items:center; justify-content:center; font-size:64px; cursor:pointer; box-shadow:0 24px 60px -18px rgba(52,87,213,.55); border:none; transition:transform .12s ease, box-shadow .12s ease;}
 .home-square:hover{transform:translateY(-3px); box-shadow:0 28px 70px -16px rgba(52,87,213,.65);}
 .home-square:active{transform:translateY(0) scale(.97);}
@@ -160,6 +196,8 @@ body.is-discreet .sensitive{filter:blur(7px); user-select:none;}
 .home-tile .lbl{font-size:14px;font-weight:600}
 .home-square.alt{background:linear-gradient(155deg,#12A150 0%,#0D7C3E 100%);box-shadow:0 24px 60px -18px rgba(18,161,80,.5)}
 .home-square.alt2{background:linear-gradient(155deg,#B3402A 0%,#8A3220 100%);box-shadow:0 24px 60px -18px rgba(179,64,42,.5)}
+.home-square.alt3{background:linear-gradient(155deg,#AF52DE 0%,#7A2EA6 100%);box-shadow:0 24px 60px -18px rgba(175,82,222,.5)}
+.home-square.alt4{background:linear-gradient(155deg,#FF9500 0%,#C96E00 100%);box-shadow:0 24px 60px -18px rgba(255,149,0,.5)}
 .pin-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--navy2);color:#EDEFF4;gap:26px;padding:24px}
 .pin-title{font-size:17px;font-weight:600}
 .pin-dots{display:flex;gap:16px}
@@ -204,6 +242,9 @@ var LS_KEY = "comptoir_tickets_v1";
 var LS_SEQ = "comptoir_seq_v1";
 var LS_PACKS = "comptoir_packs_v1";
 var LS_DISCREET = "comptoir_discreet_v1";
+var LS_PROFILE = "comptoir_profile_v1";
+var PROFILE_EMOJIS = ["🙂","😎","🦊","🐼","🐯","🌟","🔥","🍀","🎯","🧾"];
+var PROFILE_COLORS = ["#3457D5","#FF3B30","#FF9500","#12A150","#AF52DE","#5856D6"];
 
 function loadHistory(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"[]"); }catch(e){ return []; } }
 function saveHistory(list){ try{ localStorage.setItem(LS_KEY, JSON.stringify(list)); }catch(e){} }
@@ -216,6 +257,44 @@ function nextSeq(){
 }
 function isDiscreet(){ try{ return localStorage.getItem(LS_DISCREET) === "1"; }catch(e){ return false; } }
 function setDiscreet(v){ try{ localStorage.setItem(LS_DISCREET, v?"1":"0"); }catch(e){} }
+function loadProfile(){
+  var def = {pseudo:"", emoji:"🙂", color:PROFILE_COLORS[0]};
+  try{ return Object.assign(def, JSON.parse(localStorage.getItem(LS_PROFILE)||"{}")); }catch(e){ return def; }
+}
+function saveProfile(p){ try{ localStorage.setItem(LS_PROFILE, JSON.stringify(p)); }catch(e){} }
+function applyProfileTheme(){
+  var p = loadProfile();
+  document.documentElement.style.setProperty("--blue", p.color);
+  document.documentElement.style.setProperty("--blue-dk", p.color);
+}
+function profileBtnHtml(){ var p = loadProfile(); return escapeHtml(p.emoji || "🙂"); }
+function openProfileSheet(afterSave){
+  var p = loadProfile(), chosenEmoji = p.emoji, chosenColor = p.color;
+  var o = document.createElement("div"); o.className = "overlay";
+  o.innerHTML = '<div class="sheet"><h4>Mon profil</h4>'+
+    '<div class="avatar-preview" id="pf-preview">'+escapeHtml(chosenEmoji)+'</div>'+
+    '<div class="hint" style="font-size:11px;color:var(--ink-soft);margin-bottom:4px">Choisissez un emoji comme photo de profil</div>'+
+    '<div class="emojis" id="pf-emojis">'+PROFILE_EMOJIS.map(function(e){ return '<button type="button" data-e="'+e+'" class="'+(e===chosenEmoji?"on":"")+'">'+e+'</button>'; }).join("")+'</div>'+
+    '<label for="pf-pseudo">Pseudo</label><input id="pf-pseudo" value="'+escapeHtml(p.pseudo)+'" placeholder="Votre pseudo">'+
+    '<label>Couleur de l\u2019application</label><div class="colors2" id="pf-colors">'+PROFILE_COLORS.map(function(c){ return '<button type="button" data-c="'+c+'" style="background:'+c+'" class="'+(c===chosenColor?"on":"")+'"></button>'; }).join("")+'</div>'+
+    '<div class="sheet-actions"><button type="button" class="b-x2" id="pf-x">Fermer</button><button type="button" class="b-save2" id="pf-s">Enregistrer</button></div></div>';
+  document.body.appendChild(o);
+  function close(){ o.remove(); }
+  o.addEventListener("click", function(e){ if(e.target === o) close(); });
+  o.querySelector("#pf-x").onclick = close;
+  o.querySelectorAll("#pf-emojis button").forEach(function(b){
+    b.onclick = function(){ chosenEmoji = b.dataset.e; o.querySelector("#pf-preview").textContent = chosenEmoji; o.querySelectorAll("#pf-emojis button").forEach(function(x){ x.classList.toggle("on", x===b); }); };
+  });
+  o.querySelectorAll("#pf-colors button").forEach(function(b){
+    b.onclick = function(){ chosenColor = b.dataset.c; o.querySelectorAll("#pf-colors button").forEach(function(x){ x.classList.toggle("on", x===b); }); };
+  });
+  o.querySelector("#pf-s").onclick = function(){
+    saveProfile({pseudo: o.querySelector("#pf-pseudo").value.trim(), emoji: chosenEmoji, color: chosenColor});
+    applyProfileTheme();
+    close();
+    if(afterSave) afterSave();
+  };
+}
 
 function fmt(n){ return (Math.round(n*100)/100).toFixed(2).replace(".",",") + " €"; }
 function pad(n){ return String(n).padStart(2,"0"); }
@@ -286,6 +365,173 @@ function offerDownload(filename, data){
   }
 }
 
+// ---------- Identity & roles ----------
+var ADMIN_EMAIL = "tom.redix67@mail.com";
+var BUILTIN_ROLES = {
+  admin: {name:"Admin", color:"#3457D5", builtin:true, perms:{seeMargins:true, manageCatalog:true, deleteSales:true, manageRoles:true}},
+  gestionnaire: {name:"Gestionnaire", color:"#12A150", builtin:true, perms:{seeMargins:true, manageCatalog:true, deleteSales:true, manageRoles:false}},
+  vendeur: {name:"Vendeur", color:"#69748A", builtin:true, perms:{seeMargins:false, manageCatalog:false, deleteSales:false, manageRoles:false}}
+};
+var rawDb = null, userCap = null;
+var myId = null, myIsOwner = false, myCanEdit = false, myRoleId = "vendeur";
+var roleAssignments = {}, customRoles = {}, globalConfig = {companyName:"", defaultTva:20};
+var identityReady = false, identityListeners = [];
+function allRoles(){ return Object.assign({}, BUILTIN_ROLES, customRoles); }
+function myPerms(){ var r = allRoles()[myRoleId] || BUILTIN_ROLES.vendeur; return r.perms; }
+function myRoleDef(){ return allRoles()[myRoleId] || BUILTIN_ROLES.vendeur; }
+function computeMyRole(){
+  if(myIsOwner){ myRoleId = "admin"; return; }
+  var a = roleAssignments[myId];
+  myRoleId = (a && a.roleId && allRoles()[a.roleId]) ? a.roleId : "vendeur";
+}
+function safeDb(p){ return p.catch(function(){ showToast("Modification refusée (droits insuffisants ?)"); }); }
+function onIdentityChange(){ computeMyRole(); identityListeners.forEach(function(f){ f(); }); }
+async function bootIdentity(){
+  try{ if(window.claude && window.claude.use) rawDb = await window.claude.use("db"); }catch(e){}
+  try{
+    if(window.claude && window.claude.use){
+      userCap = await window.claude.use("user");
+      if(userCap){ myId = await userCap.id(); myIsOwner = await userCap.isOwner(); myCanEdit = await userCap.canEdit(); }
+    }
+  }catch(e){}
+  if(rawDb){
+    rawDb.collection("roles").onSnapshot(function(snap){
+      var m = {}; snap.docs.forEach(function(d){ m[d.id] = d.data()||{}; });
+      roleAssignments = m; onIdentityChange();
+    }, function(){});
+    rawDb.collection("roleDefs").onSnapshot(function(snap){
+      var m = {}; snap.docs.forEach(function(d){ m[d.id] = Object.assign({builtin:false}, d.data()||{}); });
+      customRoles = m; onIdentityChange();
+    }, function(){});
+    rawDb.doc("config/global").onSnapshot(function(snap){
+      if(snap.exists) globalConfig = Object.assign(globalConfig, snap.data());
+      onIdentityChange();
+    }, function(){});
+  }
+  identityReady = true;
+  onIdentityChange();
+}
+bootIdentity();
+
+// ---------- Settings & roles sheet ----------
+function slugify(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || ("role-"+Date.now().toString(36)); }
+function openSettingsSheet(){
+  var o = document.createElement("div"); o.className = "overlay";
+  o.innerHTML = '<div class="sheet"><h4>Réglages</h4>'+
+    '<div class="tabs2"><button type="button" class="on" data-tab="gen">Général</button><button type="button" data-tab="roles">Rôles</button><button type="button" data-tab="assign">Attribution</button></div>'+
+    '<div id="st-body"></div>'+
+    '<div class="sheet-actions"><button type="button" class="b-x2" id="st-x">Fermer</button></div></div>';
+  document.body.appendChild(o);
+  function close(){ o.remove(); }
+  o.addEventListener("click", function(e){ if(e.target === o) close(); });
+  o.querySelector("#st-x").onclick = close;
+  var body = o.querySelector("#st-body");
+
+  function paintGen(){
+    body.innerHTML =
+      '<label>Nom de l\u2019entreprise</label><input id="cfg-name" value="'+escapeHtml(globalConfig.companyName)+'" placeholder="Nom affiché">'+
+      '<label>TVA par défaut (%)</label><input id="cfg-tva" type="number" step="0.5" value="'+(globalConfig.defaultTva||20)+'">'+
+      '<div class="hint" style="font-size:11px;color:var(--ink-soft);margin-top:10px">Admin principal : la personne propriétaire de cette page (identifié automatiquement, non modifiable ici).</div>'+
+      '<div class="sheet-actions"><button type="button" class="b-save2" id="cfg-save">Enregistrer</button></div>';
+    body.querySelector("#cfg-save").onclick = function(){
+      var obj = {companyName: body.querySelector("#cfg-name").value.trim(), defaultTva: parseFloat(body.querySelector("#cfg-tva").value)||20};
+      if(rawDb) safeDb(rawDb.doc("config/global").set(obj)).then(function(r){ if(r!==false) showToast("Réglages enregistrés."); });
+    };
+  }
+
+  function paintRoles(){
+    var html = '<div id="rd-list"></div><label style="margin-top:16px">Nouveau rôle</label>'+
+      '<input id="rd-name" placeholder="Nom du rôle">'+
+      '<div class="perm-check"><input type="checkbox" id="rd-p1"><label for="rd-p1" style="margin:0">Voir marges / CA</label></div>'+
+      '<div class="perm-check"><input type="checkbox" id="rd-p2"><label for="rd-p2" style="margin:0">Gérer le catalogue</label></div>'+
+      '<div class="perm-check"><input type="checkbox" id="rd-p3"><label for="rd-p3" style="margin:0">Supprimer des ventes</label></div>'+
+      '<div class="perm-check"><input type="checkbox" id="rd-p4"><label for="rd-p4" style="margin:0">Gérer les rôles</label></div>'+
+      '<div class="sheet-actions"><button type="button" class="b-save2" id="rd-add">Créer le rôle</button></div>';
+    body.innerHTML = html;
+    var list = body.querySelector("#rd-list");
+    var all = allRoles();
+    list.innerHTML = Object.keys(all).map(function(id){
+      var r = all[id];
+      return '<div class="role-def-row"><div class="rn"><span style="width:10px;height:10px;border-radius:50%;background:'+r.color+';display:inline-block"></span>'+escapeHtml(r.name)+(r.builtin?' <span style="color:var(--ink-soft);font-weight:400">(intégré)</span>':'')+'</div>'+
+        '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px">'+[r.perms.seeMargins&&"Marges",r.perms.manageCatalog&&"Catalogue",r.perms.deleteSales&&"Suppression",r.perms.manageRoles&&"Rôles"].filter(Boolean).join(" · ")+'</div>'+
+        (r.builtin?'':'<button type="button" class="danger-ghost" data-del="'+id+'" style="margin-top:8px">Supprimer ce rôle</button>')+
+        '</div>';
+    }).join("");
+    list.querySelectorAll("[data-del]").forEach(function(btn){
+      btn.onclick = function(){
+        if(!btn.classList.contains("arm")){ btn.classList.add("arm"); btn.textContent="Confirmer ?"; setTimeout(function(){ btn.classList.remove("arm"); btn.textContent="Supprimer ce rôle"; },2500); return; }
+        if(rawDb) safeDb(rawDb.doc("roleDefs/"+btn.dataset.del).delete()).then(function(r){ if(r!==false){ showToast("Rôle supprimé."); paintRoles(); } });
+      };
+    });
+    body.querySelector("#rd-add").onclick = function(){
+      var name = body.querySelector("#rd-name").value.trim();
+      if(!name){ body.querySelector("#rd-name").focus(); return; }
+      var id = slugify(name);
+      var obj = {name:name, color:"#5856D6", perms:{
+        seeMargins: body.querySelector("#rd-p1").checked,
+        manageCatalog: body.querySelector("#rd-p2").checked,
+        deleteSales: body.querySelector("#rd-p3").checked,
+        manageRoles: body.querySelector("#rd-p4").checked
+      }};
+      if(rawDb) safeDb(rawDb.doc("roleDefs/"+id).set(obj)).then(function(r){ if(r!==false){ showToast("Rôle créé."); paintRoles(); } });
+    };
+  }
+
+  function paintAssign(){
+    body.innerHTML = '<label>Rechercher une personne</label><input id="as-search" placeholder="Nom…">'+
+      '<div id="as-results"></div>'+
+      '<label style="margin-top:16px">Attributions actuelles</label><div id="as-current" class="hint">Chargement…</div>';
+    var results = body.querySelector("#as-results");
+    var searchInput = body.querySelector("#as-search");
+    function renderPicker(hit){
+      var roleOpts = Object.keys(allRoles()).map(function(id){ return '<option value="'+id+'">'+escapeHtml(allRoles()[id].name)+'</option>'; }).join("");
+      var row = document.createElement("div"); row.className = "assign-row";
+      row.innerHTML = '<img src="'+hit.avatarUrl+'" alt=""><span class="nm">'+escapeHtml(hit.name||"Sans nom")+'</span><select class="role-select">'+roleOpts+'</select><button type="button" class="pack-save" style="width:auto;margin:0;padding:6px 12px">OK</button>';
+      var sel = row.querySelector("select"); sel.value = (roleAssignments[hit.id]&&roleAssignments[hit.id].roleId) || "vendeur";
+      row.querySelector("button").onclick = function(){
+        if(rawDb) safeDb(rawDb.doc("roles/"+hit.id).set({roleId: sel.value, updatedAt: Date.now()})).then(function(r){ if(r!==false){ showToast("Rôle attribué."); paintAssign(); } });
+      };
+      results.innerHTML = ""; results.appendChild(row);
+    }
+    searchInput.addEventListener("input", async function(){
+      var q = searchInput.value.trim();
+      if(!userCap){ results.innerHTML = ''; return; }
+      var hits = await userCap.search(q);
+      results.innerHTML = hits.length ? "" : '<div class="hint">Aucun résultat.</div>';
+      if(hits.length){
+        var wrap = document.createElement("div");
+        hits.forEach(function(h){
+          var d = document.createElement("div"); d.className = "search-hit";
+          d.innerHTML = '<img src="'+h.avatarUrl+'" alt=""><span class="nm"></span>';
+          d.querySelector(".nm").textContent = h.name || "Sans nom";
+          d.onclick = function(){ renderPicker(h); };
+          wrap.appendChild(d);
+        });
+        results.innerHTML = ""; results.appendChild(wrap);
+      }
+    });
+    var ids = Object.keys(roleAssignments);
+    var cur = body.querySelector("#as-current");
+    if(!ids.length){ cur.textContent = "Aucune attribution personnalisée pour l\u2019instant."; }
+    else if(userCap){
+      userCap.profiles(ids).then(function(ps){
+        cur.innerHTML = ids.map(function(id){
+          var roleId = roleAssignments[id].roleId, r = allRoles()[roleId] || BUILTIN_ROLES.vendeur;
+          return '<div class="assign-row"><span class="nm">'+escapeHtml((ps[id]&&ps[id].name)||"Quelqu\u2019un")+'</span><span class="role-pill" style="background:'+r.color+'">'+escapeHtml(r.name)+'</span></div>';
+        }).join("");
+      });
+    }
+  }
+
+  o.querySelectorAll(".tabs2 button").forEach(function(b){
+    b.onclick = function(){
+      o.querySelectorAll(".tabs2 button").forEach(function(x){ x.classList.toggle("on", x===b); });
+      if(b.dataset.tab==="gen") paintGen(); else if(b.dataset.tab==="roles") paintRoles(); else paintAssign();
+    };
+  });
+  paintGen();
+}
+
 // ---------- PIN + main menu ----------
 var PIN = "0703";
 var AGENDA_URL = "https://claude.ai/artifact/SrWhDZJ9VTqx1tssFKDD2j";
@@ -319,15 +565,19 @@ function renderHome(){
   var app = document.getElementById("app");
   app.innerHTML =
     '<div class="home-wrap">'+
+      '<button type="button" class="profile-btn" id="home-profile" style="position:absolute; top:calc(18px + env(safe-area-inset-top,0px)); right:18px">'+profileBtnHtml()+'</button>'+
       '<div class="home-grid">'+
         '<button type="button" class="home-tile" id="home-caisse"><span class="home-square">🧾</span><span class="lbl">Caisse</span></button>'+
         '<a class="home-tile" href="'+AGENDA_URL+'#cal" target="_blank" rel="noopener"><span class="home-square alt">📅</span><span class="lbl">Calendrier</span></a>'+
         '<a class="home-tile" href="'+AGENDA_URL+'#notes" target="_blank" rel="noopener"><span class="home-square alt2">🗒️</span><span class="lbl">Notes</span></a>'+
+        '<a class="home-tile" href="'+AGENDA_URL+'#photos" target="_blank" rel="noopener"><span class="home-square alt3">📷</span><span class="lbl">Photos</span></a>'+
+        '<a class="home-tile" href="'+AGENDA_URL+'#taches" target="_blank" rel="noopener"><span class="home-square alt4">✅</span><span class="lbl">Tâches</span></a>'+
       '</div>'+
       '<div><div class="home-title">Comptoir</div><div class="home-sub">Choisissez une application</div></div>'+
       '<button type="button" class="icon-btn" id="home-lock" style="background:transparent;color:#8D97AA;border-color:#28303F">🔒 Verrouiller</button>'+
     '</div>';
   document.getElementById("home-caisse").addEventListener("click", renderApp);
+  document.getElementById("home-profile").addEventListener("click", function(){ openProfileSheet(renderHome); });
   document.getElementById("home-lock").addEventListener("click", function(){ unlocked = false; renderHome(); });
 }
 
@@ -408,6 +658,9 @@ function renderApp(){
     '<div class="wrap">'+
       '<header class="top"><div><h1>Comptoir</h1><p>Gérez vos packs, enregistrez une vente, partagez le ticket.</p></div>'+
       '<div class="top-controls">'+
+        '<span class="role-pill" style="background:'+myRoleDef().color+'">'+escapeHtml(myRoleDef().name)+'</span>'+
+        (myPerms().manageRoles ? '<button type="button" class="icon-btn" id="btn-settings">⚙ Réglages</button>' : '')+
+        '<button type="button" class="profile-btn" id="btn-profile">'+profileBtnHtml()+'</button>'+
         '<button type="button" class="icon-btn" id="btn-menu">☰ Menu</button>'+
         '<button type="button" class="icon-btn" id="btn-lock" title="Verrouiller">🔒 Verrouiller</button>'+
         '<button type="button" class="icon-btn" id="btn-discreet">👁 Mode discret</button>'+
@@ -419,15 +672,8 @@ function renderApp(){
             '<h2>Gestion des packs</h2>'+
             '<label for="f-catalogue">Catalogue</label>'+
             '<select id="f-catalogue"><option value="">-- Choisir --</option></select>'+
-            '<label style="margin-top:18px" for="np-nom">Nouveau pack</label>'+
-            '<input id="np-nom" placeholder="Nom">'+
-            '<div class="pack-form-row">'+
-              '<input id="np-vente" type="number" step="0.01" placeholder="Vente HT">'+
-              '<input id="np-cout" type="number" step="0.01" placeholder="Coût HT">'+
-              '<div></div>'+
-            '</div>'+
-            '<button type="button" class="pack-save" id="btn-save-pack">Enregistrer le pack</button>'+
-            '<button type="button" class="pack-cancel" id="btn-cancel-pack" style="display:none">Annuler la modification</button>'+
+            (myPerms().manageCatalog ? '<label style="margin-top:18px" for="np-nom">Nouveau pack</label><input id="np-nom" placeholder="Nom"><div class="pack-form-row"><input id="np-vente" type="number" step="0.01" placeholder="Vente HT"><input id="np-cout" type="number" step="0.01" placeholder="Coût HT"><div></div></div>' : '')+
+            (myPerms().manageCatalog ? '<button type="button" class="pack-save" id="btn-save-pack">Enregistrer le pack</button><button type="button" class="pack-cancel" id="btn-cancel-pack" style="display:none">Annuler la modification</button>' : '<div class="locked-note">🔒 Seuls les Gestionnaires et Admins peuvent modifier le catalogue.</div>')+
             '<div id="pack-list"></div>'+
           '</div>'+
           '<div class="panel">'+
@@ -438,7 +684,7 @@ function renderApp(){
             '</div>'+
             '<div class="row2">'+
               '<div><label for="f-vendeur">Vendeur</label><input id="f-vendeur" placeholder="Votre nom"></div>'+
-              '<div><label for="f-tva">TVA (%)</label><input id="f-tva" type="number" value="20" min="0" step="0.5"></div>'+
+              '<div><label for="f-tva">TVA (%)</label><input id="f-tva" type="number" value="'+(globalConfig.defaultTva||20)+'" min="0" step="0.5"></div>'+
             '</div>'+
             '<label for="f-produit">Produit (libellé final)</label>'+
             '<input id="f-produit" placeholder="Nom affiché sur le ticket">'+
@@ -450,7 +696,7 @@ function renderApp(){
               '<div><label for="f-remise">Remise (€)</label><input id="f-remise" type="number" step="0.01" value="0"></div>'+
               '<div><label for="f-note">Note</label><input id="f-note" placeholder="Facultatif"></div>'+
             '</div>'+
-            '<div class="margin-box sensitive"><div class="mv" id="margin-val">0.00 € de marge</div><span class="badge ok" id="margin-badge">RENTABLE</span></div>'+
+            (myPerms().seeMargins ? '<div class="margin-box sensitive"><div class="mv" id="margin-val">0.00 € de marge</div><span class="badge ok" id="margin-badge">RENTABLE</span></div>' : '<div class="locked-note">🔒 Marge visible aux Gestionnaires et Admins uniquement.</div>')+
             '<div class="actions">'+
               '<button type="button" class="primary" id="btn-generate">Valider la vente</button>'+
               '<button type="button" class="ghost" id="btn-reset">Effacer</button>'+
@@ -463,11 +709,15 @@ function renderApp(){
         '</div></div>'+
       '</div>'+
       '<div class="panel" style="margin-top:22px"><div class="panel-head"><h2>Calendrier des ventes</h2><div class="cal-nav"><button type="button" id="cal-prev">‹</button><div class="cal-month" id="cal-month-label"></div><button type="button" id="cal-next">›</button></div></div><div class="cal-grid" id="cal-grid"></div><div class="cal-filter-bar" id="cal-filter-bar" style="display:none"></div></div>'+
-      '<div class="hist"><div class="panel-head"><h2>Historique des ventes</h2><div class="hist-tools"><input id="hist-search" placeholder="Filtrer par client / produit"><button type="button" id="btn-export">Exporter CSV</button><button type="button" class="danger-ghost" id="btn-reset-stats">Réinitialiser les statistiques</button></div></div><div id="hist-list"></div></div>'+
+      '<div class="hist"><div class="panel-head"><h2>Historique des ventes</h2><div class="hist-tools"><input id="hist-search" placeholder="Filtrer par client / produit"><button type="button" id="btn-export">Exporter CSV</button>'+(myPerms().deleteSales?'<button type="button" class="danger-ghost" id="btn-reset-stats">Réinitialiser les statistiques</button>':'')+'</div></div><div id="hist-list"></div></div>'+
     '</div>';
 
   document.getElementById("btn-menu").addEventListener("click", renderHome);
+  document.getElementById("btn-profile").addEventListener("click", function(){ openProfileSheet(renderApp); });
   document.getElementById("btn-lock").addEventListener("click", function(){ unlocked = false; renderHome(); });
+  var settingsBtn = document.getElementById("btn-settings");
+  if(settingsBtn) settingsBtn.addEventListener("click", openSettingsSheet);
+  identityListeners = [function(){ if(unlocked && document.getElementById("stats-row")) renderApp(); }];
 
   var discreetBtn = document.getElementById("btn-discreet");
   function syncDiscreetBtn(){
@@ -488,15 +738,17 @@ function renderApp(){
     var ca = hist.reduce(function(s,r){ return s+(r.totalTTC||0); }, 0);
     var marge = hist.reduce(function(s,r){ return s+(r.marge||0); }, 0);
     var packs = loadPacks();
+    var canSeeMargins = myPerms().seeMargins;
     document.getElementById("stats-row").innerHTML =
       '<div class="stat"><div class="sv">'+hist.length+'</div><div class="sl">Ventes enregistrées</div></div>'+
-      '<div class="stat"><div class="sv sensitive">'+fmt(ca)+'</div><div class="sl">Chiffre d\u2019affaires TTC</div></div>'+
-      '<div class="stat"><div class="sv sensitive">'+fmt(marge)+'</div><div class="sl">Marge cumulée</div></div>'+
+      '<div class="stat"><div class="sv '+(canSeeMargins?"sensitive":"")+'">'+(canSeeMargins?fmt(ca):"🔒")+'</div><div class="sl">Chiffre d\u2019affaires TTC</div></div>'+
+      '<div class="stat"><div class="sv '+(canSeeMargins?"sensitive":"")+'">'+(canSeeMargins?fmt(marge):"🔒")+'</div><div class="sl">Marge cumulée</div></div>'+
       '<div class="stat"><div class="sv">'+packs.length+'</div><div class="sl">Packs au catalogue</div></div>';
   }
 
   // ----- Packs -----
   var editingPackIdx = null;
+  var canManageCatalog = myPerms().manageCatalog;
   function refreshPackUI(){
     var packs = loadPacks();
     var sel = document.getElementById("f-catalogue");
@@ -508,8 +760,9 @@ function renderApp(){
       list.innerHTML = '<div class="pack-empty">Aucun pack enregistré pour le moment.</div>';
     } else {
       list.innerHTML = '<div class="pack-list">' + packs.map(function(p,i){
-        return '<div class="pack-row" data-idx="'+i+'"><span class="pn">'+escapeHtml(p.name)+'</span><span class="pv sensitive">'+fmt(p.venteHT)+' / coût '+fmt(p.coutHT)+'</span><button class="pdel" data-idx="'+i+'" title="Supprimer">🗑</button></div>';
+        return '<div class="pack-row" data-idx="'+i+'"><span class="pn">'+escapeHtml(p.name)+'</span><span class="pv sensitive">'+fmt(p.venteHT)+' / coût '+fmt(p.coutHT)+'</span>'+(canManageCatalog?'<button class="pdel" data-idx="'+i+'" title="Supprimer">🗑</button>':'')+'</div>';
       }).join("") + '</div>';
+      if(!canManageCatalog) return;
       list.querySelectorAll(".pdel").forEach(function(btn){
         btn.addEventListener("click", function(e){
           e.stopPropagation();
@@ -540,7 +793,8 @@ function renderApp(){
     }
     refreshStats();
   }
-  document.getElementById("btn-save-pack").onclick = function(){
+  var savePackBtn = document.getElementById("btn-save-pack");
+  if(savePackBtn) savePackBtn.onclick = function(){
     var name = document.getElementById("np-nom").value.trim();
     var vente = parseFloat(document.getElementById("np-vente").value)||0;
     var cout = parseFloat(document.getElementById("np-cout").value)||0;
@@ -560,7 +814,8 @@ function renderApp(){
     document.getElementById("btn-cancel-pack").style.display = "none";
     refreshPackUI();
   };
-  document.getElementById("btn-cancel-pack").onclick = function(){
+  var cancelPackBtn = document.getElementById("btn-cancel-pack");
+  if(cancelPackBtn) cancelPackBtn.onclick = function(){
     editingPackIdx = null;
     document.getElementById("np-nom").value = "";
     document.getElementById("np-vente").value = "";
@@ -702,14 +957,15 @@ function renderApp(){
       wrap.innerHTML = '<div class="empty-note">'+(list.length ? "Aucune vente ne correspond à ce filtre." : "Aucune vente pour l\u2019instant — validez une vente pour la voir apparaître ici.")+'</div>';
       return;
     }
+    var canDeleteSales = myPerms().deleteSales, canSeeMg = myPerms().seeMargins;
     var html = '<div class="hist-list">';
     filtered.slice().reverse().forEach(function(r){
       html += '<div class="hist-row" data-realidx="'+list.indexOf(r)+'">'+
         '<div class="hn">#'+r.numStr+'</div>'+
         '<div class="hc"><b>'+escapeHtml(r.produit||r.client||"Vente")+'</b><small>'+escapeHtml(r.client||"—")+' · '+escapeHtml(r.date)+'</small></div>'+
-        '<div class="hm badge sensitive '+(r.marge>=0?"ok":"bad")+'">'+fmt(r.marge)+'</div>'+
+        (canSeeMg ? '<div class="hm badge sensitive '+(r.marge>=0?"ok":"bad")+'">'+fmt(r.marge)+'</div>' : '')+
         '<div class="ht">'+fmt(r.totalTTC)+'</div>'+
-        '<button class="hdel" title="Supprimer">🗑</button>'+
+        (canDeleteSales ? '<button class="hdel" title="Supprimer">🗑</button>' : '')+
         '</div>';
     });
     html += '</div>';
@@ -721,7 +977,8 @@ function renderApp(){
         showReceipt(list[idx]);
         window.scrollTo({top:0, behavior:"smooth"});
       });
-      row.querySelector(".hdel").addEventListener("click", function(e){
+      var delBtn = row.querySelector(".hdel"); if(!delBtn) return;
+      delBtn.addEventListener("click", function(e){
         e.stopPropagation();
         showConfirm("Supprimer cette vente de l\u2019historique ?", function(){
           var cur = loadHistory();
@@ -749,7 +1006,8 @@ function renderApp(){
     var csv = headers.join(";") + "\n" + rows.join("\n");
     offerDownload("historique-comptoir.csv", "\ufeff"+csv);
   });
-  document.getElementById("btn-reset-stats").addEventListener("click", function(){
+  var resetStatsBtn = document.getElementById("btn-reset-stats");
+  if(resetStatsBtn) resetStatsBtn.addEventListener("click", function(){
     showConfirm("Réinitialiser tout l\u2019historique des ventes et les statistiques ? Cette action est irréversible.", function(){
       saveHistory([]);
       try{ localStorage.setItem(LS_SEQ, "0"); }catch(e){}
@@ -793,7 +1051,7 @@ function renderApp(){
   };
   document.getElementById("btn-reset").onclick = function(){
     ["f-client","f-id","f-vendeur","f-produit","f-note"].forEach(function(id){ document.getElementById(id).value=""; });
-    document.getElementById("f-tva").value = "20";
+    document.getElementById("f-tva").value = String(globalConfig.defaultTva||20);
     document.getElementById("f-vente").value = "0";
     document.getElementById("f-cout").value = "0";
     document.getElementById("f-remise").value = "0";
@@ -811,6 +1069,7 @@ function renderApp(){
 }
 
 // ---------- Boot ----------
+applyProfileTheme();
 var hash = location.hash || "";
 if(hash.indexOf("#r=") === 0){
   try{
