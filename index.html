@@ -1868,8 +1868,34 @@ function paintStocks(){
   var v=l.filter(function(x){ return !f||x.st===f; });
   body.querySelector("#stk").innerHTML=v.length?'<table class="tbl"><tr><th>Article</th><th>Qté</th><th>Statut</th><th>Vendeur</th><th></th></tr>'+v.map(function(x){ return '<tr data-id="'+x.id+'"><td>'+escapeHtml(x.n)+'</td><td>'+x.q+'</td><td><select class="ss" style="width:auto;padding:4px">'+optHtml(STK,x.st)+'</select></td><td>'+escapeHtml(x.v)+'</td><td><button type="button" class="ag-x">🗑</button></td></tr>'; }).join("")+'</table>':'<div class="empty-note">Aucun article.</div>';
   body.querySelectorAll("#stk tr[data-id]").forEach(function(r){ var id=r.dataset.id;
-    $(r,".ss").onchange=function(){ cachedStock.forEach(function(x){ if(x.id===id) x.st=r.querySelector(".ss").value; }); cloudSet("comptoir_stock_v1", cachedStock); };
+    $(r,".ss").onchange=function(){
+      var sel = r.querySelector(".ss"), newSt = sel.value;
+      var item = cachedStock.filter(function(x){ return x.id===id; })[0];
+      if(!item){ return; }
+      if(item.q <= 1 || newSt === item.st){ item.st = newSt; cloudSet("comptoir_stock_v1", cachedStock); return; }
+      askStockQty(item, newSt, sel);
+    };
     $(r,".ag-x").onclick=function(){ cachedStock = cachedStock.filter(function(x){ return x.id!==id; }); cloudSet("comptoir_stock_v1", cachedStock); }; });
+}
+function askStockQty(item, newSt, selEl){
+  var label = STK.filter(function(s){ return s[0]===newSt; })[0];
+  var o = sheet('<h4>Changer le statut</h4>'+
+    '<div class="hint" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px">« '+escapeHtml(item.n)+' » — '+item.q+' en stock. Combien passer en « '+escapeHtml(label?label[1]:newSt)+' » ?</div>'+
+    '<label>Quantité</label><input id="aq-n" type="number" min="1" max="'+item.q+'" value="1">'+
+    '<div class="sheet-actions"><button type="button" class="b-x2" id="aq-x">Annuler</button><button type="button" class="b-save2" id="aq-s">Valider</button></div>');
+  $(o,"#aq-x").onclick = function(){ selEl.value = item.st; o.remove(); };
+  $(o,"#aq-s").onclick = function(){
+    var n = Math.max(1, Math.min(item.q, parseInt($(o,"#aq-n").value,10)||1));
+    if(n >= item.q){
+      item.st = newSt;
+    } else {
+      item.q = item.q - n;
+      cachedStock.push({id:agUid(), n:item.n, q:n, st:newSt, v:item.v});
+    }
+    cloudSet("comptoir_stock_v1", cachedStock);
+    o.remove();
+    paintStocks();
+  };
 }
 function renderStocks(){
   var body=agSessionInit("Stocks");
