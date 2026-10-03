@@ -369,11 +369,13 @@ body.is-discreet .sensitive{filter:blur(7px); user-select:none;}
   .wrap{padding:18px 14px 70px;}
   header.top h1{font-size:19px;}
   header.top p{font-size:12px;}
-  .top-controls{gap:6px; flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; max-width:100%;}
-  .top-controls::-webkit-scrollbar{display:none;}
-  .icon-btn{padding:7px 9px; font-size:11.5px; white-space:nowrap; flex-shrink:0;}
-  .role-pill{padding:5px 8px; font-size:9px; flex-shrink:0;}
-  .profile-btn{width:32px; height:32px; font-size:14px; flex-shrink:0;}
+  header.top{gap:10px;}
+  .top-controls{gap:6px; flex-wrap:wrap; max-width:100%; justify-content:flex-end;}
+  .icon-btn{padding:8px; font-size:15px; flex-shrink:0; min-width:34px; justify-content:center;}
+  .icon-btn .lbl{display:none;}
+  .role-pill{padding:0; width:12px; height:12px; min-width:12px; border-radius:50%; flex-shrink:0;}
+  .role-pill .lbl{display:none;}
+  .profile-btn{width:34px; height:34px; font-size:15px; flex-shrink:0;}
   .panel{padding:15px;}
   .grid{gap:16px;}
   .stats{gap:8px;}
@@ -1163,14 +1165,14 @@ function renderApp(){
     '<div class="wrap">'+
       '<header class="top"><div><h1>Comptoir</h1><p>Gérez vos packs, enregistrez une vente, partagez le ticket.</p></div>'+
       '<div class="top-controls">'+
-        '<span class="role-pill" style="background:'+myRoleDef().color+'">'+escapeHtml(myRoleDef().name)+'</span>'+
-        (canSettings() ? '<button type="button" class="icon-btn" id="btn-settings">⚙ Réglages</button>' : '')+
+        '<span class="role-pill" style="background:'+myRoleDef().color+'"><span class="lbl">'+escapeHtml(myRoleDef().name)+'</span></span>'+
+        (canSettings() ? '<button type="button" class="icon-btn" id="btn-settings">⚙<span class="lbl"> Réglages</span></button>' : '')+
         '<button type="button" class="profile-btn" id="btn-profile">'+profileBtnHtml()+'</button>'+
-        '<button type="button" class="icon-btn" id="btn-quote">🧮 Devis</button>'+
-        '<button type="button" class="icon-btn" id="btn-sat">🎫 Satisfaction</button>'+
-        '<button type="button" class="icon-btn" id="btn-menu">☰ Menu</button>'+
-        '<button type="button" class="icon-btn" id="btn-lock" title="Verrouiller">🔒 Verrouiller</button>'+
-        '<button type="button" class="icon-btn" id="btn-discreet">👁 Mode discret</button>'+
+        '<button type="button" class="icon-btn" id="btn-quote">🧮<span class="lbl"> Devis</span></button>'+
+        '<button type="button" class="icon-btn" id="btn-sat">🎫<span class="lbl"> Satisfaction</span></button>'+
+        '<button type="button" class="icon-btn" id="btn-menu">☰<span class="lbl"> Menu</span></button>'+
+        '<button type="button" class="icon-btn" id="btn-lock" title="Verrouiller">🔒<span class="lbl"> Verrouiller</span></button>'+
+        '<button type="button" class="icon-btn" id="btn-discreet">👁<span class="lbl"> Mode discret</span></button>'+
       '</div></header>'+
       '<div class="stats" id="stats-row"></div>'+
       '<div class="grid">'+
@@ -1231,7 +1233,7 @@ function renderApp(){
   function syncDiscreetBtn(){
     var on = isDiscreet();
     discreetBtn.classList.toggle("active", on);
-    discreetBtn.textContent = on ? "👁 Mode discret actif" : "👁 Mode discret";
+    discreetBtn.innerHTML = on ? '👁<span class="lbl"> Mode discret actif</span>' : '👁<span class="lbl"> Mode discret</span>';
   }
   discreetBtn.addEventListener("click", function(){
     setDiscreet(!isDiscreet());
